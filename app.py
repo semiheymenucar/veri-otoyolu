@@ -1,8 +1,5 @@
-import onizle
-ip_kayit = {}
-import yonetim
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import sqlite3, json, os, uuid
+import sqlite3, os, uuid
 from urllib.parse import parse_qs, urlparse
 from email.parser import BytesParser
 from email.policy import default
@@ -10,7 +7,7 @@ from email.policy import default
 IBAN_NO = "TR43 0004 6001 4788 8000 3997 07"
 ALICI_AD = "Semih Eymen Uçar"
 BANKA_ADI = "Akbank"
-GIZLI_ANAHTAR = "otoyol_gizli_9988"
+GIZLI = "otoyol_gizli_9988"
 
 db = sqlite3.connect("otoyol.db", check_same_thread=False)
 db.execute("CREATE TABLE IF NOT EXISTS musteriler (anahtar TEXT PRIMARY KEY, ad TEXT, kalan_hak INTEGER, toplam_gecis INTEGER, dosya_adi TEXT)")
@@ -22,91 +19,99 @@ with open("dosyalar/oyun_yama_v1.pak", "wb") as f:
     f.write(b"GERCEK_OYUN_VERI_PAKETI_1001" * 100)
 
 class Otoyol(BaseHTTPRequestHandler):
-    def gonder_html(self, kod, icerik):
+    def html(self, kod, metin):
         self.send_response(kod)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.end_headers()
-        self.wfile.write(icerik.encode("utf-8"))
+        self.wfile.write(metin.encode("utf-8"))
 
-    def teslim_et(self, key):
+    def gonder(self, key, indir):
         row = db.execute("SELECT kalan_hak, dosya_adi FROM musteriler WHERE anahtar=?", (key,)).fetchone()
         if not row:
-            self.gonder_html(401, "<body style='background:#0f172a;color:white;padding:30px;'><h3>Gecersiz Anahtar</h3><a href='/' style='color:#38bdf8;'>Geri</a></body>")
+            self.html(401, "<body style='background:#0f172a;color:white;padding:30px;'><h3>Geçersiz Anahtar</h3><a href='/' style='color:#38bdf8;'>Geri</a></body>")
             return
         kalan, d_adi = row
-        if kalan <= 0:
-            self.gonder_html(402, "<body style='background:#0f172a;color:white;padding:30px;'><h3>Kotaniz Bitti!</h3><a href='/' style='color:#38bdf8;'>Geri</a></body>")
-            return
-        db.execute("UPDATE musteriler SET kalan_hak=kalan_hak-1, toplam_gecis=toplam_gecis+1 WHERE anahtar=?", (key,))
-        db.commit()
+        if indir:
+            if kalan <= 0:
+                self.html(402, "<body style='background:#0f172a;color:white;padding:30px;'><h3>Kotanız Bitti</h3><a href='/' style='color:#38bdf8;'>Geri</a></body>")
+                return
+            db.execute("UPDATE musteriler SET kalan_hak=kalan_hak-1, toplam_gecis=toplam_gecis+1 WHERE anahtar=?", (key,))
+            db.commit()
+
         yol = os.path.join("dosyalar", d_adi or "oyun_yama_v1.pak")
         if not os.path.exists(yol):
             yol = "dosyalar/oyun_yama_v1.pak"
-        ad = os.path.basename(yol).replace(f"{key}_", "")
+        ad = os.path.basename(yol).replace(key + "_", "")
+        veri = open(yol, "rb").read()
+
+        if indir:
+            tur, disp = "application/octet-stream", f'attachment; filename="{ad}"'
+        else:
+            k = ad.lower()
+            tur = "image/jpeg" if k.endswith((".jpg", ".jpeg")) else "image/png" if k.endswith(".png") else "application/pdf" if k.endswith(".pdf") else "text/plain; charset=utf-8"
+            disp = "inline"
+
         self.send_response(200)
-        self.send_header("Content-Type", "application/octet-stream")
-        self.send_header("Content-Disposition", f'attachment; filename="{ad}"')
+        self.send_header("Content-Type", tur)
+        self.send_header("Content-Length", str(len(veri)))
+        self.send_header("Content-Disposition", disp)
         self.end_headers()
-        self.wfile.write(open(yol, "rb").read())
+        self.wfile.write(veri)
 
     def do_GET(self):
         p = urlparse(self.path)
         q = parse_qs(p.query)
+        key = "".join(q.get("anahtar", [])).strip()
+
         if p.path == "/yonetim":
-            if q.get("sifre", [""])[0] != GIZLI_ANAHTAR:
-                self.gonder_html(403, "<h3>Yetkisiz Erisim</h3>"); return
+            if "".join(q.get("sifre", [])) != GIZLI:
+                self.html(403, "Yetkisiz"); return
             if "ekle" in q:
-                db.execute("UPDATE musteriler SET kalan_hak=kalan_hak+1000 WHERE anahtar=?", (q["ekle"][0],)); db.commit()
+                db.execute("UPDATE musteriler SET kalan_hak=kalan_hak+1000 WHERE anahtar=?", ("".join(q.get("ekle", [])),))
+                db.commit()
             rows = db.execute("SELECT anahtar, ad, kalan_hak, toplam_gecis, dosya_adi FROM musteriler").fetchall()
-            tr = "".join([f"<tr><td>{r[1]}</td><td><code>{r[0]}</code></td><td>{r[2]}</td><td>{r[3]}</td><td>{(r[4] or '').replace(r[0]+'_','')}</td><td><a href='/yonetim?sifre={GIZLI_ANAHTAR}&ekle={r[0]}' style='color:#10b981;'>+1000 Hak</a></td></tr>" for r in rows])
-            self.gonder_html(200, f"<body style='font-family:sans-serif;background:#0f172a;color:white;padding:24px;'><h2>🎛️ Veri Otoyolu Kokpit</h2><table border='1' cellpadding='10' style='border-collapse:collapse;width:100%;border-color:#334155;'><tr><th>Proje</th><th>Anahtar</th><th>Kalan</th><th>Geçiş</th><th>Dosya</th><th>İşlem</th></tr>{tr}</table><br><a href='/' style='color:#38bdf8;'>← Ana Sayfa</a></body>")
+            tr = ""
+            for k, ad, kalan, gecis, dosya in rows:
+                temiz = (dosya or "oyun_yama_v1.pak").replace(k + "_", "")
+                tr += f"<tr><td>{ad}</td><td><code>{k}</code></td><td>{kalan}</td><td>{gecis}</td><td>{temiz}</td><td><a href='/onizle?anahtar={k}' target='_blank' style='color:#38bdf8;margin-right:10px;'>👁️ Gör</a><a href='/yonetim?sifre={GIZLI}&ekle={k}' style='color:#10b981;'>+1000 Hak</a></td></tr>"
+            self.html(200, f"<body style='font-family:sans-serif;background:#0f172a;color:white;padding:24px;'><h2>🎛️ Veri Otoyolu Kokpit</h2><table border='1' cellpadding='10' style='border-collapse:collapse;width:100%;border-color:#334155;'><tr><th>Proje</th><th>Anahtar</th><th>Kalan</th><th>Geçiş</th><th>Dosya</th><th>İşlem</th></tr>{tr}</table><br><a href='/' style='color:#38bdf8;'>← Ana Sayfa</a></body>")
             return
-        if p.path == "/yonetim":
-            if q.get("sifre", [""]) != GIZLI_ANAHTAR: self.gonder_html(403, "Yetkisiz"); return
-            if "ekle" in q: db.execute("UPDATE musteriler SET kalan_hak=kalan_hak+1000 WHERE anahtar=?", (q["ekle"],)); db.commit()
-            self.gonder_html(200, yonetim.kokpit_html(db, GIZLI_ANAHTAR)); return
+
         if p.path == "/otomatik-onay":
-            if q.get("gizli", [""])[0] != GIZLI_ANAHTAR:
+            if "".join(q.get("gizli", [])) != GIZLI:
                 self.send_response(403); self.end_headers(); return
-            db.execute("UPDATE musteriler SET kalan_hak=kalan_hak+1000 WHERE anahtar=?", (q.get("anahtar", [""])[0].strip(),))
+            db.execute("UPDATE musteriler SET kalan_hak=kalan_hak+1000 WHERE anahtar=?", (key,))
             db.commit(); self.send_response(200); self.end_headers(); self.wfile.write(b"OK"); return
-        if p.path == "/onizle":
-            onizle.dosya_onizle(self, db, q.get("anahtar", [""]).strip()); return
-        if p.path == "/eski_onizle":
-            k = q.get("anahtar", [""]).strip()
-            r = db.execute("SELECT dosya_adi FROM musteriler WHERE anahtar=?", (k,)).fetchone()
-            if not r: self.gonder_html(404, "Bulunamadi"); return
-            yol = f"dosyalar/{r[0]}"
-            uzanti = yol.lower()
-            tur = "image/jpeg" if uzanti.endswith((".jpg",".jpeg")) else "image/png" if uzanti.endswith(".png") else "application/pdf" if uzanti.endswith(".pdf") else "text/plain; charset=utf-8"
-            self.send_response(200); self.send_header("Content-Type", tur); self.send_header("Content-Disposition", "inline"); self.end_headers()
-            self.wfile.write(open(yol, "rb").read()); return
+
         if p.path == "/indir":
-            self.teslim_et(q.get("anahtar", [""])[0].strip()); return
+            self.gonder(key, True); return
+
+        if p.path == "/onizle":
+            self.gonder(key, False); return
+
         if p.path == "/kontrol":
-            k = q.get("anahtar", [""])[0].strip()
-            r = db.execute("SELECT ad, kalan_hak, dosya_adi FROM musteriler WHERE anahtar=?", (k,)).fetchone()
+            r = db.execute("SELECT ad, kalan_hak, dosya_adi FROM musteriler WHERE anahtar=?", (key,)).fetchone()
             if not r:
-                self.gonder_html(200, "<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h3>❌ Anahtar Bulunamadı</h3><a href='/' style='color:#38bdf8;'>← Geri Dön</a></body>")
+                self.html(200, "<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h3>❌ Anahtar Bulunamadı</h3><a href='/' style='color:#38bdf8;'>← Geri</a></body>")
                 return
-            temiz = (r[2] or "oyun_yama_v1.pak").replace(f"{k}_", "")
-            self.gonder_html(200, f"<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h2>📂 Depo Durumu</h2><p><b>Proje:</b> {r[0]}</p><p><b>Yüklü Dosya:</b> {temiz}</p><p><b>Kalan Hak:</b> {r[1]}</p><a href='/indir?anahtar={k}' style='display:inline-block;background:#10b981;color:white;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold;'>⬇️ Dosyayı İndir</a> <a href='/onizle?anahtar={k}' target='_blank' style='display:inline-block;background:#3b82f6;color:white;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold;margin-left:8px;'>👁️ İndirmeden Gör</a><br><br><a href='/' style='color:#38bdf8;'>← Ana Sayfa</a></body>")
+            ad_p, kalan_p, dosya_p = r
+            temiz = (dosya_p or "oyun_yama_v1.pak").replace(key + "_", "")
+            self.html(200, f"<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h2>📂 Depo Durumu</h2><p><b>Proje:</b> {ad_p}</p><p><b>Dosya:</b> {temiz}</p><p><b>Kalan Hak:</b> {kalan_p}</p><a href='/indir?anahtar={key}' style='display:inline-block;background:#10b981;color:white;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold;'>⬇️ İndir</a> <a href='/onizle?anahtar={key}' target='_blank' style='display:inline-block;background:#3b82f6;color:white;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold;margin-left:8px;'>👁️ İndirmeden Gör</a><br><br><a href='/' style='color:#38bdf8;'>← Ana Sayfa</a></body>")
             return
+
         if p.path == "/" and not self.headers.get("X-API-Key"):
-            self.gonder_html(200, f"<!DOCTYPE html><html lang='tr'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Veri Otoyolu</title><style>body{{font-family:sans-serif;background:#0f172a;color:#f8fafc;max-width:680px;margin:20px auto;padding:16px}}.kutu{{background:#1e293b;padding:20px;border-radius:12px;margin-bottom:16px;border:1px solid #334155}}input,button{{padding:12px;border-radius:8px;border:none;font-size:15px;margin-top:8px;width:100%;box-sizing:border-box}}input{{background:#0f172a;color:white;border:1px solid #475569}}button{{background:#3b82f6;color:white;font-weight:bold}}.yesil{{background:#10b981}}.mor{{background:#8b5cf6}}</style></head><body><h1>🚀 Veri Otoyolu</h1><div class='kutu'><h3>1. Ücretsiz Anahtar Al</h3><form method='POST' action='/kayit'><input name='ad' placeholder='Proje Adı' required><button>API Anahtarı Üret</button></form></div><div class='kutu'><h3>2. Dosya Yükle</h3><form method='POST' action='/yukle' enctype='multipart/form-data'><input name='anahtar' placeholder='vo_...' required><input type='file' name='dosya' required><button class='yesil'>Yükle</button></form></div><div class='kutu'><h3>3. Dosyamı Gör ve İndir</h3><form method='GET' action='/kontrol'><input name='anahtar' placeholder='vo_...' required><button class='mor'>📂 Dosyamı Görüntüle</button></form></div><div class='kutu'><h3>4. Otomatik Kota (100 TL = 1000 Hak)</h3><p><b>{BANKA_ADI} - {ALICI_AD}</b><br>IBAN: <code>{IBAN_NO}</code><br><small>Açıklamaya sadece API anahtarınızı yazın.</small></p></div></body></html>")
+            self.html(200, f"<!DOCTYPE html><html lang='tr'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Veri Otoyolu</title><style>body{{font-family:sans-serif;background:#0f172a;color:#f8fafc;max-width:680px;margin:20px auto;padding:16px}}.kutu{{background:#1e293b;padding:20px;border-radius:12px;margin-bottom:16px;border:1px solid #334155}}input,button{{padding:12px;border-radius:8px;border:none;font-size:15px;margin-top:8px;width:100%;box-sizing:border-box}}input{{background:#0f172a;color:white;border:1px solid #475569}}button{{background:#3b82f6;color:white;font-weight:bold}}.yesil{{background:#10b981}}.mor{{background:#8b5cf6}}</style></head><body><h1>🚀 Veri Otoyolu</h1><div class='kutu'><h3>1. Ücretsiz Anahtar Al</h3><form method='POST' action='/kayit'><input name='ad' placeholder='Proje Adı' required><button>API Anahtarı Üret</button></form></div><div class='kutu'><h3>2. Dosya Yükle</h3><form method='POST' action='/yukle' enctype='multipart/form-data'><input name='anahtar' placeholder='vo_...' required><input type='file' name='dosya' required><button class='yesil'>Yükle</button></form></div><div class='kutu'><h3>3. Dosyamı Gör ve İndir</h3><form method='GET' action='/kontrol'><input name='anahtar' placeholder='vo_...' required><button class='mor'>📂 Dosyamı Görüntüle</button></form></div><div class='kutu'><h3>4. Otomatik Kota (100 TL = 1000 Hak)</h3><p><b>{BANKA_ADI} - {ALICI_AD}</b><br>IBAN: <code>{IBAN_NO}</code><br><small>Açıklamaya sadece API anahtarınızı yazın.</small></p></div></body></html>")
             return
-        self.teslim_et(self.headers.get("X-API-Key"))
+        self.gonder(self.headers.get("X-API-Key"), True)
 
     def do_POST(self):
         ham = self.rfile.read(int(self.headers.get("Content-Length", 0)))
         if self.path == "/kayit":
-            ip = self.headers.get("X-Forwarded-For", self.client_address).split(",").strip()
-            if ip_kayit.get(ip, 0) >= 2: self.gonder_html(429, "<body style=background:#0f172a;color:white;padding:30px><h3>⚠️ Günlük ücretsiz anahtar limitinize (2 adet) ulaştınız.</h3><a href=/ style=color:#38bdf8>Geri</a></body>"); return
-            ip_kayit[ip] = ip_kayit.get(ip, 0) + 1
-            ad = parse_qs(ham.decode()).get("ad", ["Proje"])[0]
+            ad = "".join(parse_qs(ham.decode()).get("ad", ["Proje"]))
             k = "vo_" + uuid.uuid4().hex[:16]
-            db.execute("INSERT INTO musteriler VALUES (?, ?, 10, 0, 'oyun_yama_v1.pak')", (k, ad)); db.commit()
-            self.gonder_html(200, f"<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h2>✅ Anahtarınız: {k}</h2><a href='/' style='color:#38bdf8;'>← Ana Sayfa</a></body>")
+            db.execute("INSERT INTO musteriler VALUES (?, ?, 10, 0, 'oyun_yama_v1.pak')", (k, ad))
+            db.commit()
+            self.html(200, f"<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h2>✅ Anahtarınız: <code>{k}</code></h2><a href='/' style='color:#38bdf8;'>← Ana Sayfa</a></body>")
         elif self.path == "/yukle":
             m = BytesParser(policy=default).parsebytes(f"Content-Type: {self.headers.get('Content-Type')}\r\n\r\n".encode() + ham)
             anahtar, d_adi, icerik = "", "", b""
@@ -114,10 +119,11 @@ class Otoyol(BaseHTTPRequestHandler):
                 if part.get_param("name", header="content-disposition") == "anahtar": anahtar = part.get_content().strip()
                 elif part.get_param("name", header="content-disposition") == "dosya": d_adi = part.get_filename() or ""; icerik = part.get_payload(decode=True)
             if not db.execute("SELECT 1 FROM musteriler WHERE anahtar=?", (anahtar,)).fetchone() or not d_adi:
-                self.gonder_html(400, "<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h3>❌ Geçersiz Anahtar veya Dosya</h3><a href='/' style='color:#38bdf8;'>Geri</a></body>"); return
+                self.html(400, "<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h3>❌ Geçersiz Anahtar veya Dosya</h3><a href='/' style='color:#38bdf8;'>Geri</a></body>"); return
             g_ad = f"{anahtar}_{os.path.basename(d_adi)}"
             open(os.path.join("dosyalar", g_ad), "wb").write(icerik)
-            db.execute("UPDATE musteriler SET dosya_adi=? WHERE anahtar=?", (g_ad, anahtar)); db.commit()
-            self.gonder_html(200, f"<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h2>🚀 Dosya Yüklendi!</h2><a href='/kontrol?anahtar={anahtar}' style='color:#34d399;font-weight:bold;'>📂 Dosyayı Gör ve İndir →</a></body>")
+            db.execute("UPDATE musteriler SET dosya_adi=? WHERE anahtar=?", (g_ad, anahtar))
+            db.commit()
+            self.html(200, f"<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h2>🚀 Dosya Yüklendi!</h2><a href='/kontrol?anahtar={anahtar}' style='color:#34d399;font-weight:bold;'>📂 Dosyayı Gör ve İndir →</a></body>")
 
 HTTPServer(("0.0.0.0", int(os.environ.get("PORT", 8080))), Otoyol).serve_forever()
