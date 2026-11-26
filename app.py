@@ -12,7 +12,7 @@ IBAN_NO, ALICI_AD, BANKA_ADI, GIZLI = "TR43 0004 6001 4788 8000 3997 07", "Semih
 db = sqlite3.connect("otoyol.db", check_same_thread=False)
 db.execute("CREATE TABLE IF NOT EXISTS musteriler (anahtar TEXT PRIMARY KEY, ad TEXT, kalan_hak INTEGER, toplam_gecis INTEGER, dosya_adi TEXT, ip TEXT)")
 db.execute("CREATE TABLE IF NOT EXISTS loglar (id INTEGER PRIMARY KEY AUTOINCREMENT, zaman TEXT, ip TEXT, islem TEXT, detay TEXT)")
-db.execute("INSERT OR IGNORE INTO musteriler VALUES ('anahtar_oyun_studyo_1', 'Indie Oyun Ekibi', 10, 0, 'oyun_yama_v1.pak', 'sistem')")
+db.execute("INSERT OR IGNORE INTO musteriler VALUES ('anahtar_oyun_studyo_1', 'Indie Oyun Ekibi', 1, 0, 'oyun_yama_v1.pak', 'sistem')")
 db.commit()
 
 os.makedirs("dosyalar", exist_ok=True)
@@ -116,6 +116,16 @@ class Otoyol(BaseHTTPRequestHandler):
             uyari = f"<p style='color:#f87171;'>⚠️ IP ({ip}) 10 ücretsiz hak doldu! <b>100 TL = 100 Hak</b> yükleyin.</p>" if ip_k == 0 else f"<p style='color:#34d399;'>🌐 IP: <code>{ip}</code> | Kalan Ücretsiz Anahtar: <b>{ip_k} / 10</b></p>"
             self.html(200, sablon.ana_sayfa(uyari, BANKA_ADI, ALICI_AD, IBAN_NO)); return
     def do_POST(self):
+        ip_k = self.ip_bul()
+        if "/anahtar" in self.path or "/olustur" in self.path or self.path == "/":
+            cl = int(self.headers.get("Content-Length", 0))
+            if cl < 2048:
+                sayi = db.execute("SELECT COUNT(*) FROM musteriler WHERE ip=?", (ip_k,)).fetchone()[0]
+                if sayi >= 10:
+                    log_yaz(ip_k, "ANAHTAR_LIMITI", "10 ucretsiz anahtar hakki doldu")
+                    self.html(403, "<body style=\"font-family:sans-serif;background:#0f172a;color:white;padding:30px;\"><h3>🚫 Ücretsiz API Anahtarı Alma Hakkınız Doldu (10/10)!</h3><p>Her API anahtarı tek kullanımlıktır ve maksimum 10 adet ücretsiz alabilirsiniz.</p><a href=\"/\" style=\"color:#38bdf8;\">← Ana Sayfa</a></body>")
+                    return
+
         ham = self.rfile.read(int(self.headers.get("Content-Length", 0))); ip = self.ip_bul()
         if self.path == "/kayit":
             ip_k = max(0, 10 - ip_kullanim_bul(ip))
@@ -123,7 +133,7 @@ class Otoyol(BaseHTTPRequestHandler):
                 log_yaz(ip, "IP_LIMIT_DOLU", "Engellendi")
                 self.html(402, f"<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h3>⚠️ IP ({ip}) 10 Ücretsiz Hak Doldu!</h3><p><b>100 TL = 100 Hak</b> IBAN: <code>{IBAN_NO}</code> ({ALICI_AD})</p><a href='/' style='color:#38bdf8;'>← Ana Sayfa</a></body>"); return
             ad = "".join(parse_qs(ham.decode()).get("ad", ["Proje"])); k = "vo_" + uuid.uuid4().hex[:16]
-            db.execute("INSERT INTO musteriler VALUES (?, ?, 10, 0, 'oyun_yama_v1.pak', ?)", (k, ad, ip)); db.commit()
+            db.execute("INSERT INTO musteriler VALUES (?, ?, 1, 0, 'oyun_yama_v1.pak', ?)", (k, ad, ip)); db.commit()
             log_yaz(ip, "YENI_KAYIT", f"{ad} ({k}) | Kalan: {ip_k - 1}")
             self.html(200, f"<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h2>✅ Anahtarınız: <code>{k}</code></h2><p>Bu anahtarda <b>10</b> hak var. (IP kalan: <b>{ip_k - 1} / 10</b>)</p><a href='/' style='color:#38bdf8;'>← Ana Sayfa</a></body>")
         elif self.path == "/yukle":
@@ -138,7 +148,7 @@ class Otoyol(BaseHTTPRequestHandler):
             kalan = sum(int(v) for v in row)
             if kalan <= 0:
                 log_yaz(ip, "YUKLEME_ENGELLENDI", f"{anahtar} (Kota 0)")
-                self.html(402, f"<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h3>⚠️ Kotanız Bitti (0 Hak)!</h3><p><b>100 TL = 100 Hak</b> IBAN: <code>{IBAN_NO}</code> ({ALICI_AD})<br>Açıklama: <code>{anahtar}</code></p><a href='/' style='color:#38bdf8;'>← Ana Sayfa</a></body>"); return
+                self.html(402, f"<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h3>⚠️ Bu API Anahtarı Kullanılmış veya Kotası Bitmiş (Tek Kullanımlık)!</h3><p><b>100 TL = 100 Hak</b> IBAN: <code>{IBAN_NO}</code> ({ALICI_AD})<br>Açıklama: <code>{anahtar}</code></p><a href='/' style='color:#38bdf8;'>← Ana Sayfa</a></body>"); return
             g_ad = f"{anahtar}_{os.path.basename(d_adi)}"
             open(os.path.join("dosyalar", g_ad), "wb").write(icerik)
             db.execute("UPDATE musteriler SET dosya_adi=?, kalan_hak=kalan_hak-1, toplam_gecis=toplam_gecis+1 WHERE anahtar=?", (g_ad, anahtar)); db.commit()
