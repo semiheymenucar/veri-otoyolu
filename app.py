@@ -40,8 +40,11 @@ class Otoyol(BaseHTTPRequestHandler):
         if not row:
             self.html(401, "<body style='background:#0f172a;color:white;padding:30px;'><h3>❌ Geçersiz Anahtar</h3><a href='/' style='color:#38bdf8;'>Geri</a></body>"); return
         kalan, d_adi = row
+        if kalan <= 0:
+            log_yaz(ip, "ERISIM_ENGELLENDI", f"{key} (Kota 0)")
+            self.html(402, f"<body style=font-family:sans-serif;background:#0f172a;color:white;padding:30px><h3>⚠️ Kotanız Bitti (0 Hak)!</h3><p>Devam etmek için <b>100 TL = 100 Hak</b> yükleyin.<br><b>IBAN:</b> <code>{IBAN_NO}</code> ({ALICI_AD})<br><b>Açıklama:</b> <code>{key}</code></p><a href=/ style=color:#38bdf8>← Ana Sayfa</a></body>"); return
         if indir:
-            if kalan <= 0:
+            if False:
                 log_yaz(ip, "KOTA_BITTI", f"{key} | 100 TL = 100 Hak gerekli")
                 self.html(402, f"<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h3>⚠️ 10 Ücretsiz Hakkınız Doldu!</h3><p><b>IP:</b> <code>{ip}</code><br>Devam etmek için <b>100 TL = 100 Hak</b> yükleyin.<br><b>IBAN:</b> <code>{IBAN_NO}</code> ({ALICI_AD})<br><b>Açıklama:</b> <code>{key}</code></p><a href='/' style='color:#38bdf8;'>← Ana Sayfa</a></body>"); return
             db.execute("UPDATE musteriler SET kalan_hak=kalan_hak-1, toplam_gecis=toplam_gecis+1 WHERE anahtar=?", (key,)); db.commit()
@@ -99,7 +102,13 @@ class Otoyol(BaseHTTPRequestHandler):
             for part in m.iter_parts():
                 if part.get_param("name", header="content-disposition") == "anahtar": anahtar = part.get_content().strip()
                 elif part.get_param("name", header="content-disposition") == "dosya": d_adi = part.get_filename() or ""; icerik = part.get_payload(decode=True)
-            if not db.execute("SELECT 1 FROM musteriler WHERE anahtar=?", (anahtar,)).fetchone() or not d_adi:
+            r_yukle = db.execute("SELECT kalan_hak FROM musteriler WHERE anahtar=?", (anahtar,)).fetchone()
+            if not r_yukle or not d_adi:
+                self.html(400, "<body style=background:#0f172a;color:white;padding:30px><h3>❌ Geçersiz Anahtar veya Dosya</h3><a href=/ style=color:#38bdf8>Geri</a></body>"); return
+            if int(list(r_yukle).pop(0)) <= 0:
+                log_yaz(ip, "YUKLEME_ENGELLENDI", f"{anahtar} (Kota 0)")
+                self.html(402, f"<body style=font-family:sans-serif;background:#0f172a;color:white;padding:30px><h3>⚠️ Kotanız Bitti (0 Hak)!</h3><p>Dosya yüklemek için <b>100 TL = 100 Hak</b> yükleyin.<br><b>IBAN:</b> <code>{IBAN_NO}</code> ({ALICI_AD})<br><b>Açıklama:</b> <code>{anahtar}</code></p><a href=/ style=color:#38bdf8>← Ana Sayfa</a></body>"); return
+            if False:
                 self.html(400, "<body style='background:#0f172a;color:white;padding:30px;'><h3>❌ Geçersiz Anahtar/Dosya</h3><a href='/' style='color:#38bdf8;'>Geri</a></body>"); return
             g_ad = f"{anahtar}_{os.path.basename(d_adi)}"
             r_hak = db.execute("SELECT kalan_hak FROM musteriler WHERE anahtar=?", (anahtar,)).fetchone()
