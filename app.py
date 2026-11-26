@@ -69,7 +69,7 @@ class Otoyol(BaseHTTPRequestHandler):
             db.execute("UPDATE musteriler SET kalan_hak=kalan_hak+100 WHERE anahtar=?", (key,)); db.commit()
             log_yaz(ip, "OTOMATIK_ODEME", f"{key} (+100 Hak)"); self.send_response(200); self.end_headers(); self.wfile.write(b"OK"); return
         if p.path == "/indir": self.gonder(key, True); return
-        if p.path == "/onizle": self.gonder(key, False); return
+        if p.path == "/onizle": self.gonder(key, q.get("admin") != [GIZLI]); return
         if p.path == "/kontrol":
             r = db.execute("SELECT ad, kalan_hak, dosya_adi FROM musteriler WHERE anahtar=?", (key,)).fetchone()
             if not r: self.html(200, "<body style='background:#0f172a;color:white;padding:30px;'><h3>❌ Anahtar Bulunamadı</h3><a href='/' style='color:#38bdf8;'>← Geri</a></body>"); return
@@ -101,7 +101,11 @@ class Otoyol(BaseHTTPRequestHandler):
             if not db.execute("SELECT 1 FROM musteriler WHERE anahtar=?", (anahtar,)).fetchone() or not d_adi:
                 self.html(400, "<body style='background:#0f172a;color:white;padding:30px;'><h3>❌ Geçersiz Anahtar/Dosya</h3><a href='/' style='color:#38bdf8;'>Geri</a></body>"); return
             g_ad = f"{anahtar}_{os.path.basename(d_adi)}"
+            r_hak = db.execute("SELECT kalan_hak FROM musteriler WHERE anahtar=?", (anahtar,)).fetchone()
+            for hk in r_hak:
+                if hk <= 0: self.html(402, "<h3>⚠️ Kotanız Bitti! 100 TL = 100 Hak yükleyin.</h3>"); return
             open(os.path.join("dosyalar", g_ad), "wb").write(icerik)
+            db.execute("UPDATE musteriler SET kalan_hak=kalan_hak-1, toplam_gecis=toplam_gecis+1 WHERE anahtar=?", (anahtar,))
             db.execute("UPDATE musteriler SET dosya_adi=? WHERE anahtar=?", (g_ad, anahtar)); db.commit()
             log_yaz(ip, "DOSYA_YUKLENDI", f"{anahtar} -> {os.path.basename(d_adi)}")
             self.html(200, f"<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h2>🚀 Dosya Yüklendi!</h2><a href='/kontrol?anahtar={anahtar}' style='color:#34d399;font-weight:bold;'>📂 Dosyayı Gör ve İndir →</a></body>")
