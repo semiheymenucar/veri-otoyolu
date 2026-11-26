@@ -1,3 +1,4 @@
+import yonetim
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import sqlite3, json, os, uuid
 from urllib.parse import parse_qs, urlparse
@@ -58,6 +59,10 @@ class Otoyol(BaseHTTPRequestHandler):
             tr = "".join([f"<tr><td>{r[1]}</td><td><code>{r[0]}</code></td><td>{r[2]}</td><td>{r[3]}</td><td>{(r[4] or '').replace(r[0]+'_','')}</td><td><a href='/yonetim?sifre={GIZLI_ANAHTAR}&ekle={r[0]}' style='color:#10b981;'>+1000 Hak</a></td></tr>" for r in rows])
             self.gonder_html(200, f"<body style='font-family:sans-serif;background:#0f172a;color:white;padding:24px;'><h2>🎛️ Veri Otoyolu Kokpit</h2><table border='1' cellpadding='10' style='border-collapse:collapse;width:100%;border-color:#334155;'><tr><th>Proje</th><th>Anahtar</th><th>Kalan</th><th>Geçiş</th><th>Dosya</th><th>İşlem</th></tr>{tr}</table><br><a href='/' style='color:#38bdf8;'>← Ana Sayfa</a></body>")
             return
+        if p.path == "/yonetim":
+            if q.get("sifre", [""]) != GIZLI_ANAHTAR: self.gonder_html(403, "Yetkisiz"); return
+            if "ekle" in q: db.execute("UPDATE musteriler SET kalan_hak=kalan_hak+1000 WHERE anahtar=?", (q["ekle"],)); db.commit()
+            self.gonder_html(200, yonetim.kokpit_html(db, GIZLI_ANAHTAR)); return
         if p.path == "/otomatik-onay":
             if q.get("gizli", [""])[0] != GIZLI_ANAHTAR:
                 self.send_response(403); self.end_headers(); return
