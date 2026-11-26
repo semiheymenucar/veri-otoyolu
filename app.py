@@ -68,6 +68,15 @@ class Otoyol(BaseHTTPRequestHandler):
                 self.send_response(403); self.end_headers(); return
             db.execute("UPDATE musteriler SET kalan_hak=kalan_hak+1000 WHERE anahtar=?", (q.get("anahtar", [""])[0].strip(),))
             db.commit(); self.send_response(200); self.end_headers(); self.wfile.write(b"OK"); return
+        if p.path == "/onizle":
+            k = q.get("anahtar", [""]).strip()
+            r = db.execute("SELECT dosya_adi FROM musteriler WHERE anahtar=?", (k,)).fetchone()
+            if not r: self.gonder_html(404, "Bulunamadi"); return
+            yol = f"dosyalar/{r[0]}"
+            uzanti = yol.lower()
+            tur = "image/jpeg" if uzanti.endswith((".jpg",".jpeg")) else "image/png" if uzanti.endswith(".png") else "application/pdf" if uzanti.endswith(".pdf") else "text/plain; charset=utf-8"
+            self.send_response(200); self.send_header("Content-Type", tur); self.send_header("Content-Disposition", "inline"); self.end_headers()
+            self.wfile.write(open(yol, "rb").read()); return
         if p.path == "/indir":
             self.teslim_et(q.get("anahtar", [""])[0].strip()); return
         if p.path == "/kontrol":
@@ -77,7 +86,7 @@ class Otoyol(BaseHTTPRequestHandler):
                 self.gonder_html(200, "<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h3>❌ Anahtar Bulunamadı</h3><a href='/' style='color:#38bdf8;'>← Geri Dön</a></body>")
                 return
             temiz = (r[2] or "oyun_yama_v1.pak").replace(f"{k}_", "")
-            self.gonder_html(200, f"<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h2>📂 Depo Durumu</h2><p><b>Proje:</b> {r[0]}</p><p><b>Yüklü Dosya:</b> {temiz}</p><p><b>Kalan Hak:</b> {r[1]}</p><a href='/indir?anahtar={k}' style='display:inline-block;background:#10b981;color:white;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold;'>⬇️ Dosyayı İndir</a><br><br><a href='/' style='color:#38bdf8;'>← Ana Sayfa</a></body>")
+            self.gonder_html(200, f"<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h2>📂 Depo Durumu</h2><p><b>Proje:</b> {r[0]}</p><p><b>Yüklü Dosya:</b> {temiz}</p><p><b>Kalan Hak:</b> {r[1]}</p><a href='/indir?anahtar={k}' style='display:inline-block;background:#10b981;color:white;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold;'>⬇️ Dosyayı İndir</a> <a href='/onizle?anahtar={k}' target='_blank' style='display:inline-block;background:#3b82f6;color:white;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold;margin-left:8px;'>👁️ İndirmeden Gör</a><br><br><a href='/' style='color:#38bdf8;'>← Ana Sayfa</a></body>")
             return
         if p.path == "/" and not self.headers.get("X-API-Key"):
             self.gonder_html(200, f"<!DOCTYPE html><html lang='tr'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Veri Otoyolu</title><style>body{{font-family:sans-serif;background:#0f172a;color:#f8fafc;max-width:680px;margin:20px auto;padding:16px}}.kutu{{background:#1e293b;padding:20px;border-radius:12px;margin-bottom:16px;border:1px solid #334155}}input,button{{padding:12px;border-radius:8px;border:none;font-size:15px;margin-top:8px;width:100%;box-sizing:border-box}}input{{background:#0f172a;color:white;border:1px solid #475569}}button{{background:#3b82f6;color:white;font-weight:bold}}.yesil{{background:#10b981}}.mor{{background:#8b5cf6}}</style></head><body><h1>🚀 Veri Otoyolu</h1><div class='kutu'><h3>1. Ücretsiz Anahtar Al</h3><form method='POST' action='/kayit'><input name='ad' placeholder='Proje Adı' required><button>API Anahtarı Üret</button></form></div><div class='kutu'><h3>2. Dosya Yükle</h3><form method='POST' action='/yukle' enctype='multipart/form-data'><input name='anahtar' placeholder='vo_...' required><input type='file' name='dosya' required><button class='yesil'>Yükle</button></form></div><div class='kutu'><h3>3. Dosyamı Gör ve İndir</h3><form method='GET' action='/kontrol'><input name='anahtar' placeholder='vo_...' required><button class='mor'>📂 Dosyamı Görüntüle</button></form></div><div class='kutu'><h3>4. Otomatik Kota (100 TL = 1000 Hak)</h3><p><b>{BANKA_ADI} - {ALICI_AD}</b><br>IBAN: <code>{IBAN_NO}</code><br><small>Açıklamaya sadece API anahtarınızı yazın.</small></p></div></body></html>")
