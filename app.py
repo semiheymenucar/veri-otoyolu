@@ -19,8 +19,11 @@ os.makedirs("dosyalar", exist_ok=True)
 open("dosyalar/oyun_yama_v1.pak", "wb").write(b"GERCEK_OYUN_VERI_PAKETI_1001" * 100)
 
 def log_yaz(ip, islem, detay):
-    db.execute("INSERT INTO loglar (zaman, ip, islem, detay) VALUES (?, ?, ?, ?)", (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), ip, islem, detay))
+    z = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    db.execute("INSERT INTO loglar (zaman, ip, islem, detay) VALUES (?, ?, ?, ?)", (z, ip, islem, detay))
     db.commit()
+    with open("otoyol_kayitlar.log", "a", encoding="utf-8") as lf:
+        lf.write(f"{z} | {ip} | {islem} | {detay}\n")
 
 def ip_kullanim_bul(ip):
     r = db.execute("SELECT COUNT(*) FROM musteriler WHERE ip=?", (ip,)).fetchone()
@@ -72,7 +75,7 @@ class Otoyol(BaseHTTPRequestHandler):
                 h = "".join(q.get("ekle", [])); m = int("".join(q.get("miktar", ["100"])) or 100)
                 db.execute("UPDATE musteriler SET kalan_hak=kalan_hak+? WHERE anahtar=?", (m, h)); db.commit()
                 log_yaz(ip, "MANUEL_KOTA", f"{h} ({m:+d} Hak)")
-            self.html(200, sablon.kokpit(db.execute("SELECT anahtar, ad, kalan_hak, toplam_gecis, dosya_adi, ip FROM musteriler").fetchall(), db.execute("SELECT zaman, ip, islem, detay FROM loglar ORDER BY id DESC LIMIT 40").fetchall(), GIZLI)); return
+            self.html(200, sablon.kokpit(db.execute("SELECT anahtar, ad, kalan_hak, toplam_gecis, dosya_adi, ip FROM musteriler").fetchall(), db.execute("SELECT zaman, ip, islem, detay FROM loglar ORDER BY id DESC LIMIT 200").fetchall(), GIZLI)); return
         if p.path == "/otomatik-onay":
             if "".join(q.get("gizli", [])) != GIZLI: self.send_response(403); self.end_headers(); return
             db.execute("UPDATE musteriler SET kalan_hak=kalan_hak+100 WHERE anahtar=?", (key,)); db.commit()
