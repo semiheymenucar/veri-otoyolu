@@ -21,7 +21,7 @@ def log_yaz(ip, islem, detay):
     db.commit()
 
 def ip_kullanim_bul(ip):
-    r = db.execute("SELECT COALESCE(SUM(toplam_gecis), 0) FROM musteriler WHERE ip=?", (ip,)).fetchone()
+    r = db.execute("SELECT COUNT(*) FROM musteriler WHERE ip=?", (ip,)).fetchone()
     for val in r: return int(val)
     return 0
 
@@ -89,7 +89,8 @@ class Otoyol(BaseHTTPRequestHandler):
                 log_yaz(ip, "IP_LIMIT_DOLU", "Yeni anahtar engellendi")
                 self.html(402, f"<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h3>⚠️ IP ({ip}) İçin 10 Ücretsiz Hak Doldu!</h3><p><b>100 TL = 100 Hak</b> için IBAN: <code>{IBAN_NO}</code> ({ALICI_AD})</p><a href='/' style='color:#38bdf8;'>← Ana Sayfa</a></body>"); return
             ad = "".join(parse_qs(ham.decode()).get("ad", ["Proje"])); k = "vo_" + uuid.uuid4().hex[:16]
-            db.execute("INSERT INTO musteriler VALUES (?, ?, ?, 0, 'oyun_yama_v1.pak', ?)", (k, ad, ip_kalan, ip)); db.commit()
+            db.execute("INSERT INTO musteriler VALUES (?, ?, ?, 0, 'oyun_yama_v1.pak', ?)", (k, ad, 10, ip))
+            ip_kalan = ip_kalan - 1; db.commit()
             log_yaz(ip, "YENI_KAYIT", f"{ad} ({k}) | Kalan: {ip_kalan}")
             self.html(200, f"<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h2>✅ Anahtarınız: <code>{k}</code></h2><p>IP ({ip}) kalan ücretsiz hak: <b>{ip_kalan}</b></p><a href='/' style='color:#38bdf8;'>← Ana Sayfa</a></body>")
         elif self.path == "/yukle":
