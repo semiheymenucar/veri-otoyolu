@@ -121,7 +121,7 @@ class Otoyol(BaseHTTPRequestHandler):
             cl = int(self.headers.get("Content-Length", 0))
             if cl < 2048:
                 sayi = db.execute("SELECT COUNT(*) FROM musteriler WHERE ip=?", (ip_k,)).fetchone()[0]
-                if sayi >= 10:
+                if sayi[0] >= 10:
                     log_yaz(ip_k, "ANAHTAR_LIMITI", "10 ucretsiz anahtar hakki doldu")
                     self.html(403, "<body style=\"font-family:sans-serif;background:#0f172a;color:white;padding:30px;\"><h3>🚫 Ücretsiz API Anahtarı Alma Hakkınız Doldu (10/10)!</h3><p>Her API anahtarı tek kullanımlıktır ve maksimum 10 adet ücretsiz alabilirsiniz.</p><a href=\"/\" style=\"color:#38bdf8;\">← Ana Sayfa</a></body>")
                     return
