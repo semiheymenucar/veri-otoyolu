@@ -1,3 +1,5 @@
+import onizle
+ip_kayit = {}
 import yonetim
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import sqlite3, json, os, uuid
@@ -69,6 +71,8 @@ class Otoyol(BaseHTTPRequestHandler):
             db.execute("UPDATE musteriler SET kalan_hak=kalan_hak+1000 WHERE anahtar=?", (q.get("anahtar", [""])[0].strip(),))
             db.commit(); self.send_response(200); self.end_headers(); self.wfile.write(b"OK"); return
         if p.path == "/onizle":
+            onizle.dosya_onizle(self, db, q.get("anahtar", [""]).strip()); return
+        if p.path == "/eski_onizle":
             k = q.get("anahtar", [""]).strip()
             r = db.execute("SELECT dosya_adi FROM musteriler WHERE anahtar=?", (k,)).fetchone()
             if not r: self.gonder_html(404, "Bulunamadi"); return
@@ -96,6 +100,9 @@ class Otoyol(BaseHTTPRequestHandler):
     def do_POST(self):
         ham = self.rfile.read(int(self.headers.get("Content-Length", 0)))
         if self.path == "/kayit":
+            ip = self.headers.get("X-Forwarded-For", self.client_address).split(",").strip()
+            if ip_kayit.get(ip, 0) >= 2: self.gonder_html(429, "<body style=background:#0f172a;color:white;padding:30px><h3>⚠️ Günlük ücretsiz anahtar limitinize (2 adet) ulaştınız.</h3><a href=/ style=color:#38bdf8>Geri</a></body>"); return
+            ip_kayit[ip] = ip_kayit.get(ip, 0) + 1
             ad = parse_qs(ham.decode()).get("ad", ["Proje"])[0]
             k = "vo_" + uuid.uuid4().hex[:16]
             db.execute("INSERT INTO musteriler VALUES (?, ?, 10, 0, 'oyun_yama_v1.pak')", (k, ad)); db.commit()
