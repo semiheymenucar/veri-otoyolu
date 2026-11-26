@@ -18,7 +18,7 @@ os.makedirs("dosyalar", exist_ok=True)
 with open("dosyalar/oyun_yama_v1.pak", "wb") as f:
     f.write(b"GERCEK_OYUN_VERI_PAKETI_ICERIGI_10010101" * 250)
 
-SITE_URL = "https://onrender.com"
+SITE_URL = "https://veri-otoyolu.onrender.com"
 
 class VeriOtoyoluBulut(BaseHTTPRequestHandler):
     def do_GET(self):
