@@ -1,3 +1,5 @@
+import secrets, time
+BILETLER = {}
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import sqlite3, os, uuid, sablon
 from datetime import datetime
@@ -75,7 +77,12 @@ class Otoyol(BaseHTTPRequestHandler):
             if "".join(q.get("gizli", [])) != GIZLI: self.send_response(403); self.end_headers(); return
             db.execute("UPDATE musteriler SET kalan_hak=kalan_hak+100 WHERE anahtar=?", (key,)); db.commit()
             log_yaz(ip, "OTOMATIK_ODEME", f"{key} (+100 Hak)"); self.send_response(200); self.end_headers(); self.wfile.write(b"OK"); return
-        if p.path == "/ham": self.ham_veri_gonder(key, False); return
+        if p.path == "/ham":
+            b = "".join(q.get("bilet", [])).strip()
+            kayit = BILETLER.get(b)
+            if not kayit or time.time() > kayit[1]:
+                self.html(403, "<h3>403 Yasak: Gecersiz veya suresi dolmus medya bileti!</h3>"); return
+            self.ham_veri_gonder(kayit[0], False); return
         if p.path == "/onizle":
             row = db.execute("SELECT kalan_hak, dosya_adi FROM musteriler WHERE anahtar=?", (key,)).fetchone()
             if not row: self.html(401, "<h3>Geçersiz Anahtar</h3>"); return
@@ -86,7 +93,9 @@ class Otoyol(BaseHTTPRequestHandler):
                     self.html(402, f"<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h3>⚠️ Kotanız Bitti!</h3><p><b>100 TL = 100 Hak</b> IBAN: <code>{IBAN_NO}</code> ({ALICI_AD})<br>Açıklama: <code>{key}</code></p><a href='/' style='color:#38bdf8;'>← Ana Sayfa</a></body>"); return
                 db.execute("UPDATE musteriler SET kalan_hak=kalan_hak-1, toplam_gecis=toplam_gecis+1 WHERE anahtar=?", (key,)); db.commit()
                 log_yaz(ip, "DOSYA_GORUNTULENDI", f"{key} (Kalan: {kalan - 1})")
-            self.html(200, sablon.medya_goruntule(key, (d_adi or "oyun_yama_v1.pak").replace(key + "_", ""))); return
+            bilet = secrets.token_urlsafe(24)
+            BILETLER[bilet] = (key, time.time() + 30)
+            self.html(200, sablon.medya_goruntule(key, (d_adi or "oyun_yama_v1.pak").replace(key + "_", ""), bilet)); return
         if p.path == "/indir" or self.headers.get("X-API-Key"):
             kh = key or self.headers.get("X-API-Key")
             row = db.execute("SELECT kalan_hak FROM musteriler WHERE anahtar=?", (kh,)).fetchone()

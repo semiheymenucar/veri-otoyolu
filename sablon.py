@@ -7,9 +7,9 @@ def ana_sayfa(uyari, banka, alici, iban):
     <div class='kutu'><h3>3. Dosyamı Gör / Dinle ve İndir</h3><form method='GET' action='/kontrol'><input name='anahtar' placeholder='vo_...' required><button class='mor'>📂 Dosyayı Aç</button></form></div>
     <div class='kutu'><h3>4. Otomatik Kota (100 TL = 100 Hak)</h3><p><b>{banka} - {alici}</b><br>IBAN: <code>{iban}</code><br><small>Açıklamaya sadece API anahtarınızı yazın. Ödeme algılandığında hesabınıza <b>100 Hak</b> otomatik tanımlanır.</small></p></div></body></html>"""
 
-def medya_goruntule(key, dosya_adi):
+def medya_goruntule(key, dosya_adi, bilet=""):
     ad = dosya_adi.lower()
-    src = f"/ham?anahtar={key}"
+    src = f"/ham?bilet={bilet}"
     if ad.endswith((".mp3", ".wav", ".ogg", ".m4a", ".aac")):
         icerik = f"<h3>🎵 Ses / Müzik Oynatıcı</h3><p>{dosya_adi}</p><audio controls autoplay style='width:100%;margin-top:15px;'><source src='{src}'></audio>"
     elif ad.endswith((".mp4", ".webm", ".mov")):
