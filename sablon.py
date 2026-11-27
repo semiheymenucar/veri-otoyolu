@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", function() {{
     const dur = document.getElementById("yukleDurum"), met = document.getElementById("yukleMetin"), bar = document.getElementById("yukleBar");
     dur.style.display = "block"; met.innerText = "🔐 Şifreli kasa tüneli açılıyor...";
     let iRes; try {{ iRes = await fetch("/oturum_ac", {{method:"POST", headers:{{"X-Anahtar":k,"X-Dosya-Adi":encodeURIComponent(d.name),"X-Toplam-Boyut":String(d.size)}}}}); }} catch(err) {{ met.innerText = "❌ Bağlantı hatası: " + err; return; }}
-    if (!iRes.ok) {{ document.open(); document.write(await iRes.text()); document.close(); return; }}
+    if (iRes.status === 500) {{ met.innerText = "⚡ Doğrudan güvenli kasaya aktarılıyor..."; const yRes = await fetch("/yedek_yukle", {{method:"POST", headers:{{"X-Anahtar":k,"X-Dosya-Adi":encodeURIComponent(d.name),"X-Toplam-Boyut":String(d.size)}}, body:d}}); document.open(); document.write(await yRes.text()); document.close(); return; }} if (!iRes.ok) {{ document.open(); document.write(await iRes.text()); document.close(); return; }}
     const info = await iRes.json(), CHUNK = 10*1024*1024; let off = 0, fid = null;
     while (off < d.size) {{
       const end = Math.min(off + CHUNK, d.size), y = Math.round((end / d.size) * 100);

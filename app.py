@@ -155,6 +155,19 @@ class Otoyol(BaseHTTPRequestHandler):
             db.execute("INSERT INTO musteriler (anahtar, ad, ip, kota_byte, kullanilan_byte, bitis_ts) VALUES (?,?,?,?,0,?)", (anahtar, proje, ip, mb * 1024 * 1024, int(time.time()) + 7 * 86400)); db.commit()
             log_yaz(ip, "DENEME_KASASI", f"{anahtar} ({mb} MB)")
             self.html(200, f"<body style='background:#0f172a;color:white;padding:30px;'><h2>🔑 {mb} MB Kasanız Hazır!</h2><p><code>{anahtar}</code></p><a href='/' style='color:#38bdf8;'>← Ana Sayfa</a></body>"); return
+        if p.path == "/yedek_yukle":
+            anahtar = self.headers.get("X-Anahtar", "").strip()
+            d_adi = os.path.basename(urllib.parse.unquote(self.headers.get("X-Dosya-Adi", "dosya.bin")))
+            t_boyut = int(self.headers.get("X-Toplam-Boyut", 0))
+            r = db.execute("SELECT kota_byte, bitis_ts FROM musteriler WHERE anahtar=?", (anahtar,)).fetchone()
+            if not r or int(r or 0) <= int(time.time()): self.html(402, "<h3>🔒 Süre dolmuş veya geçersiz.</h3>"); return
+            if t_boyut > int(r or 0): self.html(402, "<h3>⚠️ Kasa limiti aşıldı!</h3>"); return
+            veri = self.rfile.read(t_boyut)
+            g_ad = f"{anahtar}_{d_adi}"
+            open(os.path.join("dosyalar", g_ad), "wb").write(veri)
+            db.execute("UPDATE musteriler SET dosya_adi=?, kullanilan_byte=?, toplam_gecis=toplam_gecis+1 WHERE anahtar=?", (g_ad, len(veri), anahtar)); db.commit()
+            log_yaz(ip, "KASA_YUKLENDI", f"{anahtar} -> {d_adi} ({boyut_yaz(len(veri))})")
+            self.html(200, f"<body style='background:#0f172a;color:white;padding:30px;'><h2>🛡️ Kasaya Mühürlendi! ({boyut_yaz(len(veri))})</h2><a href='/kontrol?anahtar={anahtar}' style='color:#34d399;'>📂 Kasayı Aç →</a></body>"); return
         if p.path == "/oturum_ac":
             anahtar = self.headers.get("X-Anahtar", "").strip()
             d_adi = os.path.basename(urllib.parse.unquote(self.headers.get("X-Dosya-Adi", "dosya.bin")))
