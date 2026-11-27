@@ -160,8 +160,10 @@ class Otoyol(BaseHTTPRequestHandler):
             d_adi = os.path.basename(urllib.parse.unquote(self.headers.get("X-Dosya-Adi", "dosya.bin")))
             t_boyut = int(self.headers.get("X-Toplam-Boyut", 0))
             r = db.execute("SELECT kota_byte, bitis_ts FROM musteriler WHERE anahtar=?", (anahtar,)).fetchone()
-            if not r or int(r or 0) <= int(time.time()): self.html(402, "<h3>🔒 Süre dolmuş veya geçersiz.</h3>"); return
-            if t_boyut > int(r or 0): self.html(402, "<h3>⚠️ Kasa limiti aşıldı!</h3>"); return
+            if not r: self.html(403, "<h3>❌ Geçersiz Anahtar.</h3>"); return
+            kb, bts = r
+            if int(bts or 0) <= int(time.time()): self.html(402, "<h3>🔒 Süre dolmuş.</h3>"); return
+            if t_boyut > int(kb or 0): self.html(402, "<h3>⚠️ Kasa limiti aşıldı!</h3>"); return
             veri = self.rfile.read(t_boyut)
             g_ad = f"{anahtar}_{d_adi}"
             open(os.path.join("dosyalar", g_ad), "wb").write(veri)
