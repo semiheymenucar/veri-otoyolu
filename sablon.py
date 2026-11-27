@@ -79,7 +79,7 @@ document.addEventListener("DOMContentLoaded", function() {{
     const d = f.querySelector('input[type="file"]').files.item(0); if (!k || !d) return;
     const dur = document.getElementById("yukleDurum"), met = document.getElementById("yukleMetin"), bar = document.getElementById("yukleBar");
     dur.style.display = "block"; metin.innerText = "🔐 Şifreli kasa tüneli açılıyor...";
-    const iRes = await fetch("/oturum_ac", {{method:"POST", headers:{{"X-Anahtar":k,"X-Dosya-Adi":encodeURIComponent(d.name),"X-Toplam-Boyut":String(d.size)}}}});
+    let iRes; try {{ iRes = await fetch("/oturum_ac", {{method:"POST", headers:{{"X-Anahtar":k,"X-Dosya-Adi":encodeURIComponent(d.name),"X-Toplam-Boyut":String(d.size)}}}}); }} catch(err) {{ metin.innerText = "❌ Bağlantı hatası: " + err; return; }}
     if (!iRes.ok) {{ document.open(); document.write(await iRes.text()); document.close(); return; }}
     const info = await iRes.json(), CHUNK = 10*1024*1024; let off = 0, fid = null;
     while (off < d.size) {{
