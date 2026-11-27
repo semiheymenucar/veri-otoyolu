@@ -8,7 +8,7 @@ os.makedirs("dosyalar", exist_ok=True)
 IBAN_NO = "TR43 0004 6001 4788 8000 3997 07"
 ALICI_AD = "Akbank - Semih Eymen Uçar"
 ADMIN_SIFRE = os.environ.get("ADMIN_SIFRE", "otoyol_gizli_9988")
-QR_B64 = getattr(__import__("motor_v2"), "QR_B64", "") if os.path.exists("motor_v2.py") else ""
+QR_B64 = getattr(None, "QR_B64", "") if os.path.exists("motor_v2.py") else ""
 
 db = sqlite3.connect("otoyol.db", check_same_thread=False)
 db.execute("CREATE TABLE IF NOT EXISTS musteriler (anahtar TEXT PRIMARY KEY, ad TEXT, kalan_hak INTEGER DEFAULT 0, toplam_gecis INTEGER DEFAULT 0, dosya_adi TEXT DEFAULT '', ip TEXT DEFAULT '', kota_byte INTEGER DEFAULT 52428800, kullanilan_byte INTEGER DEFAULT 0, bitis_ts INTEGER DEFAULT 0)")
