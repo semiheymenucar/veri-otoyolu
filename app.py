@@ -157,9 +157,9 @@ class Otoyol(BaseHTTPRequestHandler):
                 <div style="background:#1e293b;padding:20px;border-radius:12px;border:1px solid #334155;">
                 <h2 style="color:#f87171;margin-top:0;">⚠️ Kotanız Bitti (0 Hak)</h2>
                 <p style="color:#cbd5e1;">Devam etmek için <b>100 TL = 100 Hak</b> paketini seçin:</p>
-                <a href="https://akbank.com" target="_blank" onclick="navigator.clipboard.writeText('{IBAN_NO}');" style="display:block;text-align:center;background:#22c55e;color:#0f172a;font-weight:bold;text-decoration:none;padding:14px;border-radius:8px;margin:15px 0;font-size:15px;">🏦 IBAN Kopyala ve Akbank'a Git (100 TL)</a>
+                <a href="https://akbank.com" target="_blank" onclick="navigator.clipboard.writeText('{IBAN_NO}');" style="display:block;text-align:center;background:#22c55e;color:#0f172a;font-weight:bold;text-decoration:none;padding:14px;border-radius:8px;margin:15px 0;font-size:15px;">⚡ IBAN Kopyala — Tüm Bankalar / FAST (100 TL)</a>
                 <div style="text-align:center;background:#0f172a;padding:15px;border-radius:8px;margin-bottom:15px;">
-                <p style="margin:0 0 10px 0;font-size:14px;color:#94a3b8;">📱 Mobil Bankacılıktan Karekod Okut:</p>
+                <p style="margin:0 0 10px 0;font-size:14px;color:#94a3b8;">📱 Tüm Bankalardan TR Karekod Okut (100 TL):</p>
                 <img src="{qr_resim_url}" alt="TR Karekod" style="width:210px;height:auto;border-radius:8px;background:white;padding:5px;">
                 </div>
                 <div style="background:#0f172a;padding:15px;border-radius:8px;font-size:14px;">
