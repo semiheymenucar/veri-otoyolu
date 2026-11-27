@@ -150,6 +150,9 @@ class Otoyol(BaseHTTPRequestHandler):
                 elif part.get_param("name", header="content-disposition") == "dosya": d_adi = part.get_filename() or ""; icerik = part.get_payload(decode=True)
             row = db.execute("SELECT kalan_hak FROM musteriler WHERE anahtar=?", (anahtar,)).fetchone()
             if not row or not d_adi:
+            kalan = row[0]
+            gereken_hak = max(1, math.ceil(len(icerik) / (50 * 1024 * 1024)))
+            if kalan < gereken_hak:
                 self.html(400, "<body style='background:#0f172a;color:white;padding:30px;'><h3>❌ Geçersiz Anahtar veya Dosya</h3><a href='/' style='color:#38bdf8;'>Geri</a></body>"); return
             kalan = sum(int(v) for v in row)
             gereken_hak = max(1, math.ceil(len(icerik) / (50 * 1024 * 1024)))
