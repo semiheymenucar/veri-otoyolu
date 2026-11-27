@@ -61,9 +61,9 @@ th {{ background:#0f172a; color:#38bdf8; }}
 
 <div class="kart"><h3>4. Kasa Paketleri & Fiyatlandırma (1 GB – 100 GB)</h3>
 <table><tr><th>Kapasite</th><th>1 Hafta (7 Gün)</th><th>1 Ay (30 Gün)</th><th>1 Yıl (365 Gün)</th></tr>
-<tr><td><b>1 GB Kasa</b></td><td><b>29 TL</b></td><td><b>79 TL</b></td><td><b>499 TL</b></td></tr>
-<tr><td><b>10 GB Kasa</b></td><td><b>149 TL</b></td><td><b>349 TL</b></td><td><b>1.990 TL</b></td></tr>
-<tr><td><b>100 GB Kasa</b></td><td><b>890 TL</b></td><td><b>1.990 TL</b></td><td><b>9.900 TL</b></td></tr></table>
+<tr><td><b>1 GB Kasa</b></td><td><b>39 TL</b></td><td><b>89 TL</b></td><td><b>399 TL</b></td></tr>
+<tr><td><b>10 GB Kasa</b></td><td><b>129 TL</b></td><td><b>299 TL</b></td><td><b>990 TL</b></td></tr>
+<tr><td><b>100 GB Kasa</b></td><td><b>490 TL</b></td><td><b>990 TL</b></td><td><b>4.490 TL</b></td></tr></table>
 <div style="margin-top:14px;padding:12px;background:#0f172a;border-radius:8px;border:1px solid #334155;">
   <b>{alici_ad}</b><br>IBAN: <code style="color:#34d399;">{iban_no}</code>
   <button type="button" onclick="navigator.clipboard.writeText('{iban_no}');this.innerText='✅ Kopyalandı!';" style="width:auto;padding:5px 10px;font-size:12px;margin-left:8px;">📋 IBAN Kopyala</button>
