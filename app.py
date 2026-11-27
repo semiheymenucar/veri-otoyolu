@@ -1,3 +1,4 @@
+import urllib.parse, drive_motor
 import math
 import secrets, time
 BILETLER = {}
@@ -140,6 +141,37 @@ class Otoyol(BaseHTTPRequestHandler):
             db.execute("INSERT INTO musteriler VALUES (?, ?, 1, 0, 'oyun_yama_v1.pak', ?)", (k, ad, ip)); db.commit()
             log_yaz(ip, "YENI_KAYIT", f"{ad} ({k}) | Kalan: {ip_k - 1}")
             self.html(200, f"<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h2>✅ Anahtarınız: <code>{k}</code></h2><p>Bu anahtarda <b>10</b> hak var. (IP kalan: <b>{ip_k - 1} / 10</b>)</p><a href='/' style='color:#38bdf8;'>← Ana Sayfa</a></body>")
+        elif self.path == "/parca_yukle":
+            cl = int(self.headers.get("Content-Length", 0))
+            parca_veri = self.rfile.read(cl)
+            anahtar = self.headers.get("X-Anahtar", "").strip()
+            d_adi = os.path.basename(urllib.parse.unquote(self.headers.get("X-Dosya-Adi", "dosya.bin")))
+            p_no = int(self.headers.get("X-Parca-No", 0))
+            t_parca = int(self.headers.get("X-Toplam-Parca", 1))
+            t_boyut = int(self.headers.get("X-Toplam-Boyut", len(parca_veri)))
+            ip = self.client_address[0]
+            r = db.execute("SELECT kalan_hak FROM musteriler WHERE anahtar=?", (anahtar,)).fetchone()
+            if not r:
+                self.html(403, "<body style='background:#0f172a;color:white;padding:30px;'><h3>❌ Geçersiz API Anahtarı</h3><a href='/' style='color:#38bdf8;'>← Geri</a></body>"); return
+            kalan = r[0]
+            gereken_hak = max(1, math.ceil(t_boyut / (50 * 1024 * 1024)))
+            if kalan < gereken_hak:
+                self.html(402, f"<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h3>⚠️ Yetersiz Hak (Kalan: {kalan} | Gereken: {gereken_hak})</h3><p><b>100 TL = 30 Hak</b> veya <b>250 TL = 100 Hak</b> IBAN: <code>{IBAN_NO}</code> ({ALICI_AD})<br>Açıklama: <code>{anahtar}</code></p><a href='/' style='color:#38bdf8;'>← Ana Sayfa</a></body>"); return
+            g_ad = f"{anahtar}_{d_adi}"
+            yerel_yol = os.path.join("dosyalar", g_ad)
+            with open(yerel_yol, "wb" if p_no == 0 else "ab") as f_out:
+                f_out.write(parca_veri)
+            if p_no < t_parca - 1:
+                self.send_response(200); self.end_headers(); self.wfile.write(b"OK"); return
+            kayit_ad = g_ad
+            fid = drive_motor.drive_yukle(yerel_yol, g_ad)
+            if fid:
+                kayit_ad = f"gdrive:{fid}:{d_adi}"
+                try: os.remove(yerel_yol)
+                except Exception: pass
+            db.execute("UPDATE musteriler SET dosya_adi=?, kalan_hak=kalan_hak-?, toplam_gecis=toplam_gecis+1 WHERE anahtar=?", (kayit_ad, gereken_hak, anahtar)); db.commit()
+            log_yaz(ip, "DOSYA_YUKLENDI", f"{anahtar} -> {d_adi} (Harcanan: {gereken_hak} Hak | Kalan: {kalan - gereken_hak})")
+            self.html(200, f"<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h2>🚀 Dosya 200GB Buluta Yüklendi! (Harcanan: {gereken_hak} Hak | Kalan Hak: {kalan - gereken_hak})</h2><a href='/kontrol?anahtar={anahtar}' style='color:#34d399;font-weight:bold;'>📂 Dosyayı Aç (Gör / Dinle / İndir) →</a></body>"); return
         elif self.path == "/yukle":
             m = BytesParser(policy=default).parsebytes(f"Content-Type: {self.headers.get('Content-Type')}\r\n\r\n".encode() + ham)
             anahtar, d_adi, icerik = "", "", b""
