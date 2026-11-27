@@ -37,6 +37,27 @@ def rate_izin(ip):
 def log_yaz(ip, islem, detay):
     db.execute("INSERT INTO islem_loglari (zaman, ip, islem, detay) VALUES (?,?,?,?)", (datetime.now().strftime("%d.%m.%Y %H:%M:%S"), ip, islem, detay)); db.commit()
 
+import urllib.request
+def ai_odeme_isle(metin, ip):
+    key_ai = os.environ.get("GEMINI_API_KEY", "").strip()
+    if not key_ai: return False, "API yok"
+    prompt = "Asagidaki banka bildirim metnini analiz et. Hesaba gelen TL tutarini (sadece tam sayi) ve aciklamadaki vo_ ile baslayan anahtari cikar. Sadece JSON dondur: {\"gelen\": true/false, \"tutar\": 0, \"anahtar\": \"vo_...\"}. Metin: " + metin[:1500]
+    req = urllib.request.Request(f"https://googleapis.com{key_ai}", data=json.dumps({"contents":[{"parts":[{"text":prompt}]}]}).encode(), headers={"Content-Type":"application/json"})
+    res = json.loads(urllib.request.urlopen(req, timeout=15).read().decode())
+    txt = res["candidates"][0]["content"]["parts"][0]["text"]
+    j = json.loads(txt[txt.find("{"):txt.rfind("}")+1])
+    if not j.get("gelen"): return False, "Gelen degil"
+    t, k = int(j.get("tutar", 0)), str(j.get("anahtar", "")).strip()
+    p_map = {39:(1,7), 89:(1,30), 399:(1,365), 129:(10,7), 299:(10,30), 1490:(10,365), 490:(100,7), 990:(100,30), 4490:(100,365)}
+    if t not in p_map: return False, f"Tutar eslesmedi:{t}"
+    r = db.execute("SELECT bitis_ts FROM musteriler WHERE anahtar=?", (k,)).fetchone()
+    if not r: return False, f"Anahtar yok:{k}"
+    gb, gun = p_map[t]
+    y_bit = max(int(time.time()), int(list(r).pop(0) or 0)) + (gun * 86400)
+    db.execute("UPDATE musteriler SET kota_byte=?, bitis_ts=? WHERE anahtar=?", (gb*(1024**3), y_bit, k)); db.commit()
+    log_yaz(ip, "AI_OTOMATIK_ONAY", f"{k} -> {t} TL = {gb} GB / {gun} Gun")
+    return True, f"{k} -> {gb} GB / {gun} Gun"
+
 class Otoyol(BaseHTTPRequestHandler):
     def log_message(self, *a): return
     def html(self, kod, icerik):
@@ -117,6 +138,12 @@ class Otoyol(BaseHTTPRequestHandler):
         ip = ip_al(self)
         if not rate_izin(ip): self.html(429, "<h3>⚠️ Çok fazla istek.</h3>"); return
         p = urllib.parse.urlparse(self.path)
+        if p.path == "/ai_odeme_onay":
+            if not hmac.compare_digest(self.headers.get("X-Odeme-Kod", ""), os.environ.get("ODEME_GIZLI_KOD", "vo_ai_kilit_2026")):
+                self.html(403, "Yetkisiz"); return
+            govde = self.rfile.read(int(self.headers.get("Content-Length", 0))).decode("utf-8", errors="ignore")
+            ok, msg = ai_odeme_isle(govde, ip)
+            self.html(200 if ok else 400, msg); return
         if p.path == "/anahtar_olustur":
             form = urllib.parse.parse_qs(self.rfile.read(int(self.headers.get("Content-Length", 0))).decode("utf-8", errors="ignore"))
             proje = form.get("proje_adi", ["Proje"]).pop(0)[:40]
