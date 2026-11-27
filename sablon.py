@@ -3,10 +3,10 @@ def ana_sayfa(uyari, banka, alici, iban):
     <style>body{{font-family:-apple-system,sans-serif;background:#0f172a;color:#f8fafc;max-width:680px;margin:20px auto;padding:16px}}.kutu{{background:#1e293b;padding:20px;border-radius:12px;margin-bottom:16px;border:1px solid #334155}}input,button{{padding:12px;border-radius:8px;border:none;font-size:15px;margin-top:8px;width:100%;box-sizing:border-box}}input{{background:#0f172a;color:white;border:1px solid #475569}}button{{background:#3b82f6;color:white;font-weight:bold;cursor:pointer}}.yesil{{background:#10b981}}.mor{{background:#8b5cf6}}</style></head>
     <body><h1>🚀 Veri Otoyolu</h1>
     <div class='kutu'><h3>1. Ücretsiz Anahtar Al</h3>{uyari}<form method='POST' action='/kayit'><input name='ad' placeholder='Proje Adı' required><button>API Anahtarı Üret</button></form></div>
-    <div class='kutu'><h3>2. Dosya Yükle (Her Yükleme = 1 Hak)</h3><form method='POST' action='/yukle' enctype='multipart/form-data'><input name='anahtar' placeholder='vo_...' required><input type='file' name='dosya' required><button class='yesil'>Dosyayı Otoyola Yükle</button></form></div>
+    <div class='kutu'><h3>2. Dosya Yükle (Her 50 MB = 1 Hak)</h3><form method='POST' action='/yukle' enctype='multipart/form-data'><input name='anahtar' placeholder='vo_...' required><input type='file' name='dosya' required><button class='yesil'>Dosyayı Otoyola Yükle</button></form></div>
     <div class='kutu'><h3>3. Dosyamı Gör / Dinle ve İndir</h3><form method='GET' action='/kontrol'><input name='anahtar' placeholder='vo_...' required><button class='mor'>📂 Dosyayı Aç</button></form></div>
     <div class='kutu'>
-<h3>4. Otomatik Kota (100 TL = 100 Hak)</h3>
+<h3>4. Otomatik Kota (100 TL = 30 Hak | 250 TL = 100 Hak)</h3>
 <p><b>{banka} - {alici}</b></p>
 <div style='background:#0f172a;padding:12px;border-radius:8px;margin:10px 0;'>
   <span style='font-size:13px;color:#94a3b8;'>IBAN:</span><br>
