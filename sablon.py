@@ -1,107 +1,107 @@
-def ana_sayfa(uyari, banka, alici, iban):
-    return f"""<!DOCTYPE html><html lang='tr'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Veri Otoyolu</title>
-    <style>body{{font-family:-apple-system,sans-serif;background:#0f172a;color:#f8fafc;max-width:680px;margin:20px auto;padding:16px}}.kutu{{background:#1e293b;padding:20px;border-radius:12px;margin-bottom:16px;border:1px solid #334155}}input,button{{padding:12px;border-radius:8px;border:none;font-size:15px;margin-top:8px;width:100%;box-sizing:border-box}}input{{background:#0f172a;color:white;border:1px solid #475569}}button{{background:#3b82f6;color:white;font-weight:bold;cursor:pointer}}.yesil{{background:#10b981}}.mor{{background:#8b5cf6}}</style></head>
-    <body><h1>🚀 Veri Otoyolu</h1>
-    <div class='kutu'><h3>1. Ücretsiz Anahtar Al</h3>{uyari}<form method='POST' action='/kayit'><input name='ad' placeholder='Proje Adı' required><button>API Anahtarı Üret</button></form></div>
-    <div class='kutu'><h3>2. Dosya Yükle (Her 50 MB = 1 Hak)</h3><form method='POST' action='/yukle' enctype='multipart/form-data'><input name='anahtar' placeholder='vo_...' required><input type='file' name='dosya' required><button class='yesil'>Dosyayı Otoyola Yükle</button></form></div>
-    <div class='kutu'><h3>3. Dosyamı Gör / Dinle ve İndir</h3><form method='GET' action='/kontrol'><input name='anahtar' placeholder='vo_...' required><button class='mor'>📂 Dosyayı Aç</button></form></div>
-    <div class='kutu'>
-<h3>4. Otomatik Kota (100 TL = 30 Hak | 250 TL = 100 Hak)</h3>
-<p><b>{banka} - {alici}</b></p>
-<div style='background:#0f172a;padding:12px;border-radius:8px;margin:10px 0;'>
-  <span style='font-size:13px;color:#94a3b8;'>IBAN:</span><br>
-  <code id='ana_iban' style='color:#38bdf8;font-size:14px;'>{iban}</code>
-  <button type='button' onclick="navigator.clipboard.writeText(document.getElementById('ana_iban').innerText); this.innerText='✅ Kopyalandı!';" style='background:#3b82f6;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;margin-top:8px;width:100%;'>📋 IBAN Kopyala</button>
-  <button type='button' onclick="navigator.clipboard.writeText(document.getElementById('ana_iban').innerText); this.innerText='✅ IBAN Kopyalandı! Banka Uygulamanızdan Yapıştırın'; this.style.background='#10b981';" style='width:100%;border:none;cursor:pointer;display:block;text-align:center;background:#22c55e;color:#0f172a;font-weight:bold;padding:10px;border-radius:6px;margin-top:8px;font-size:14px;'>⚡ IBAN Kopyala (Tüm Bankalar / 7/24 FAST)</button>
-</div>
-<div style='text-align:center;background:#0f172a;padding:12px;border-radius:8px;margin:10px 0;'>
-  <p style='margin:0 0 8px 0;font-size:13px;color:#94a3b8;'>📱 Banka Uygulamanızın İçindeki 'QR İşlemleri' Bölümünden Okutun (Normal kameradan değil):</p>
-  <img src="data:image/png;base64,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" alt="Akbank TR Karekod" style='width:210px;height:auto;border-radius:8px;background:white;padding:6px;'>
-</div>
-<small style='color:#cbd5e1;'>Açıklamaya sadece <b>API anahtarınızı (vo_...)</b> yazın. QR okutunca tutara <b>100 TL</b> veya <b>250 TL</b> yazın. Ödeme algılandığında paketiniz (<b>30</b> veya <b>100 Hak</b>) otomatik tanımlanır.</small>
-</div>
-<div id="yukleDurum" style="display:none;margin-top:12px;background:#0f172a;padding:12px;border-radius:8px;border:1px solid #38bdf8;">
-  <div id="yukleMetin" style="font-size:13px;color:#38bdf8;margin-bottom:6px;">⏳ Hazırlanıyor...</div>
-  <div style="width:100%;background:#1e293b;border-radius:6px;height:14px;overflow:hidden;">
-    <div id="yukleBar" style="width:0%;height:100%;background:linear-gradient(90deg,#10b981,#38bdf8);transition:width 0.2s;"></div>
-  </div>
-</div>
-<script>
-document.addEventListener("DOMContentLoaded", function() {{
-  const f = document.querySelector('form[action="/yukle"]');
-  if (!f) return;
-  f.addEventListener("submit", async function(e) {{
-    e.preventDefault();
-    const keyInp = f.querySelector('input[name="anahtar"]');
-    const fileInp = f.querySelector('input[type="file"]');
-    if (!keyInp || !fileInp || !fileInp.files.length) return;
-    const anahtar = keyInp.value.trim();
-    const dosya = fileInp.files[0];
-    const CHUNK = 5 * 1024 * 1024;
-    const toplamParca = Math.max(1, Math.ceil(dosya.size / CHUNK));
-    const durum = document.getElementById("yukleDurum");
-    const metin = document.getElementById("yukleMetin");
-    const bar = document.getElementById("yukleBar");
-    durum.style.display = "block";
-    for (let i = 0; i < toplamParca; i++) {{
-      const bas = i * CHUNK;
-      const parca = dosya.slice(bas, Math.min(dosya.size, bas + CHUNK));
-      const yuzde = Math.round(((i + 1) / toplamParca) * 100);
-      metin.innerText = "🚀 Otoyola Aktarılıyor: %" + yuzde + " (" + (i + 1) + "/" + toplamParca + " Parça)";
-      bar.style.width = yuzde + "%";
-      const res = await fetch("/parca_yukle", {{
-        method: "POST",
-        headers: {{
-          "X-Anahtar": anahtar,
-          "X-Dosya-Adi": encodeURIComponent(dosya.name),
-          "X-Parca-No": String(i),
-          "X-Toplam-Parca": String(toplamParca),
-          "X-Toplam-Boyut": String(dosya.size)
-        }},
-        body: parca
-      }});
-      const txt = await res.text();
-      if (!res.ok) {{
-        document.open(); document.write(txt); document.close();
-        return;
-      }}
-      if (i === toplamParca - 1) {{
-        metin.innerText = "✅ Buluta İşleniyor, Lütfen Bekleyin...";
-        document.open(); document.write(txt); document.close();
-      }}
-    }}
-  }});
-}});
-</script>
+from datetime import datetime
 
-</body></html>"""
+def boyut_yaz(b):
+    b = int(b or 0)
+    if b >= 1024**3: return f"{b / (1024**3):.2f} GB"
+    if b >= 1024**2: return f"{b / (1024**2):.1f} MB"
+    if b >= 1024: return f"{b / 1024:.1f} KB"
+    return f"{b} B"
 
 def dosya_rozeti(dosya_adi):
     ad = (dosya_adi or "").lower()
     if ad.endswith((".mp4", ".webm", ".mov", ".avi", ".mkv")): return "🎬 Video"
     if ad.endswith((".jpg", ".jpeg", ".png", ".webp", ".gif")): return "🖼️ Foto"
     if ad.endswith((".mp3", ".wav", ".ogg", ".m4a", ".aac", ".flac")): return "🎵 Müzik"
-    if ad.endswith((".pak", ".zip", ".rar", ".exe", ".apk", ".iso", ".7z")): return "🎮 Oyun/Paket"
-    if ad.endswith(".pdf"): return "📄 PDF"
-    return "📦 Veri"
+    if ad.endswith((".pak", ".zip", ".rar", ".exe", ".apk", ".iso", ".7z")): return "🎮 Oyun"
+    return "📦 Kasa"
 
 def medya_goruntule(key, dosya_adi, bilet=""):
     ad = dosya_adi.lower()
     src = f"/ham?bilet={bilet}"
-    rozet = dosya_rozeti(dosya_adi)
-    if ad.endswith((".mp3", ".wav", ".ogg", ".m4a", ".aac", ".flac")):
-        icerik = f"<h3>{rozet} — İndirmeden Dinle</h3><p>{dosya_adi}</p><audio controls autoplay preload='metadata' style='width:100%;margin-top:15px;'><source src='{src}'></audio>"
-    elif ad.endswith((".mp4", ".webm", ".mov", ".avi", ".mkv")):
-        icerik = f"<h3>{rozet} — İndirmeden İzle</h3><p>{dosya_adi}</p><video controls autoplay playsinline preload='metadata' style='max-width:100%;max-height:70vh;border-radius:12px;background:#000;'><source src='{src}'></video>"
-    elif ad.endswith((".jpg", ".jpeg", ".png", ".webp", ".gif")):
-        icerik = f"<h3>{rozet} — İndirmeden Bak</h3><p>{dosya_adi}</p><img src='{src}' style='max-width:100%;max-height:75vh;border-radius:12px;'>"
-    elif ad.endswith(".pdf"):
-        icerik = f"<h3>{rozet} — İndirmeden Oku</h3><iframe src='{src}' style='width:100%;height:75vh;border:none;background:white;border-radius:8px;'></iframe>"
-    else:
-        icerik = f"<h3>{rozet} — Dosya Bilgisi</h3><p><b>Dosya Adı:</b> {dosya_adi}</p><p style='color:#94a3b8;'>Bu dosya bir oyun/arşiv paketi olduğu için tarayıcıda oynatılamaz, türü yukarıda doğrulandı.</p>"
-    return f"<!DOCTYPE html><html lang='tr'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>{dosya_adi}</title></head><body style='font-family:-apple-system,sans-serif;background:#0f172a;color:white;max-width:800px;margin:20px auto;padding:20px;text-align:center;'>{icerik}<br><br><a href='/indir?anahtar={key}' style='display:inline-block;background:#10b981;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;'>⬇️ İstersen İndir</a> <a href='/' style='display:inline-block;background:#334155;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;margin-left:8px;'>← Ana Sayfa</a></body></html>"
+    if ad.endswith((".mp4", ".webm", ".mov")): return f"<video controls autoplay style='max-width:100%;border-radius:10px;'><source src='{src}'></video>"
+    if ad.endswith((".mp3", ".wav", ".ogg", ".m4a")): return f"<audio controls autoplay style='width:100%;'><source src='{src}'></audio>"
+    if ad.endswith((".jpg", ".jpeg", ".png", ".webp", ".gif")): return f"<img src='{src}' style='max-width:100%;border-radius:10px;'>"
+    return "<p style='color:#94a3b8;'>Bu dosya doğrudan indirilebilir.</p>"
+
+def ana_sayfa(uyari, iban_no, alici_ad, qr_b64):
+    return f"""<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Veri Otoyolu - Güvenli Oyun & Bulut Kasası</title>
+<style>
+body {{ font-family:-apple-system,sans-serif; background:#0f172a; color:#f8fafc; max-width:760px; margin:0 auto; padding:20px; }}
+.kart {{ background:#1e293b; border:1px solid #334155; border-radius:12px; padding:18px; margin-bottom:18px; }}
+input, select {{ width:100%; box-sizing:border-box; padding:11px; margin:6px 0 12px 0; border-radius:8px; border:1px solid #475569; background:#0f172a; color:white; font-size:15px; }}
+button {{ background:#10b981; color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; font-size:15px; cursor:pointer; width:100%; }}
+table {{ width:100%; border-collapse:collapse; margin-top:10px; font-size:14px; }}
+th, td {{ border:1px solid #334155; padding:10px; text-align:center; }}
+th {{ background:#0f172a; color:#38bdf8; }}
+</style></head><body>
+<h1>🚀 Veri Otoyolu <span style="background:#0284c7;padding:3px 8px;border-radius:6px;font-size:12px;">🛡️ Zero-Disk Kasa</span></h1>
+<p style="color:#94a3b8;">Oyun yapımcıları ve geliştiriciler için haftalıktan yıllığa süreli koruma seçenekli bulut kasası.</p>
+
+<div class="kart"><h3>1. Ücretsiz Deneme Kasası Aç (50 MB veya 100 MB)</h3>{uyari}
+<form method="POST" action="/anahtar_olustur">
+  <input type="text" name="proje_adi" placeholder="Proje veya Oyun Adı" required>
+  <select name="deneme_mb"><option value="50">🎁 Ücretsiz 50 MB Deneme Kasası (7 Gün)</option><option value="100">🎁 Ücretsiz 100 MB Deneme Kasası (7 Gün)</option></select>
+  <button type="submit">🔑 Ücretsiz Kasa Anahtarı Üret</button>
+</form></div>
+
+<div class="kart"><h3>2. Dosya Yükle (Zero-Disk Doğrudan Bulut Akışı)</h3>
+<form method="POST" action="/yukle">
+  <input type="text" name="anahtar" placeholder="Kasa API Anahtarınız (vo_...)" required>
+  <input type="file" name="dosya" required>
+  <button type="submit" style="background:#3b82f6;">⚡ Dosyayı Güvenli Kasaya Aktar</button>
+</form>
+<div id="yukleDurum" style="display:none;margin-top:12px;background:#0f172a;padding:12px;border-radius:8px;border:1px solid #38bdf8;">
+  <div id="yukleMetin" style="font-size:13px;color:#38bdf8;margin-bottom:6px;">⏳ Tünel açılıyor...</div>
+  <div style="width:100%;background:#1e293b;border-radius:6px;height:14px;overflow:hidden;"><div id="yukleBar" style="width:0%;height:100%;background:linear-gradient(90deg,#10b981,#38bdf8);"></div></div>
+</div></div>
+
+<div class="kart"><h3>3. Kasamı Aç / İndir ve Kalan Alanı Gör</h3>
+<form method="GET" action="/kontrol"><input type="text" name="anahtar" placeholder="Kasa API Anahtarınız (vo_...)" required><button type="submit" style="background:#6366f1;">📂 Kasayı Kontrol Et</button></form></div>
+
+<div class="kart"><h3>4. Kasa Paketleri & Fiyatlandırma (1 GB – 100 GB)</h3>
+<table><tr><th>Kapasite</th><th>1 Hafta (7 Gün)</th><th>1 Ay (30 Gün)</th><th>1 Yıl (365 Gün)</th></tr>
+<tr><td><b>1 GB Kasa</b></td><td><b>29 TL</b></td><td><b>79 TL</b></td><td><b>499 TL</b></td></tr>
+<tr><td><b>10 GB Kasa</b></td><td><b>149 TL</b></td><td><b>349 TL</b></td><td><b>1.990 TL</b></td></tr>
+<tr><td><b>100 GB Kasa</b></td><td><b>890 TL</b></td><td><b>1.990 TL</b></td><td><b>9.900 TL</b></td></tr></table>
+<div style="margin-top:14px;padding:12px;background:#0f172a;border-radius:8px;border:1px solid #334155;">
+  <b>{alici_ad}</b><br>IBAN: <code style="color:#34d399;">{iban_no}</code>
+  <button type="button" onclick="navigator.clipboard.writeText('{iban_no}');this.innerText='✅ Kopyalandı!';" style="width:auto;padding:5px 10px;font-size:12px;margin-left:8px;">📋 IBAN Kopyala</button>
+  <div style="margin-top:12px;text-align:center;"><img src="data:image/png;base64,{qr_b64}" alt="Akbank TR Karekod" style="width:200px;border-radius:8px;background:white;padding:6px;"></div>
+  <small style="color:#cbd5e1;display:block;margin-top:8px;">Açıklamaya sadece <b>API anahtarınızı (vo_...)</b> yazın. Paket tutarını gönderdiğinizde <b>GB ve süreniz</b> otomatik tanımlanır.</small>
+</div></div>
+<script>
+document.addEventListener("DOMContentLoaded", function() {{
+  const f = document.querySelector('form[action="/yukle"]'); if (!f) return;
+  f.addEventListener("submit", async function(e) {{
+    e.preventDefault();
+    const k = f.querySelector('input[name="anahtar"]').value.trim();
+    const d = f.querySelector('input[type="file"]').files.item(0); if (!k || !d) return;
+    const dur = document.getElementById("yukleDurum"), met = document.getElementById("yukleMetin"), bar = document.getElementById("yukleBar");
+    dur.style.display = "block"; metin.innerText = "🔐 Şifreli kasa tüneli açılıyor...";
+    const iRes = await fetch("/oturum_ac", {{method:"POST", headers:{{"X-Anahtar":k,"X-Dosya-Adi":encodeURIComponent(d.name),"X-Toplam-Boyut":String(d.size)}}}});
+    if (!iRes.ok) {{ document.open(); document.write(await iRes.text()); document.close(); return; }}
+    const info = await iRes.json(), CHUNK = 10*1024*1024; let off = 0, fid = null;
+    while (off < d.size) {{
+      const end = Math.min(off + CHUNK, d.size), y = Math.round((end / d.size) * 100);
+      met.innerText = "⚡ Doğrudan Bulut Kasasına Akıyor: %" + y; bar.style.width = y + "%";
+      const pRes = await fetch(info.upload_url, {{method:"PUT", headers:{{"Content-Range":"bytes "+off+"-"+(end-1)+"/"+d.size}}, body:d.slice(off,end)}});
+      if (pRes.status === 200 || pRes.status === 201) {{ fid = (await pRes.json()).id; break; }}
+      else if (pRes.status !== 308) {{ met.innerText = "❌ Akış kesildi (" + pRes.status + ")"; return; }}
+      off = end;
+    }}
+    met.innerText = "🛡️ Boyut mühürleniyor...";
+    const fRes = await fetch("/yukleme_tamamla", {{method:"POST", headers:{{"X-Anahtar":k,"X-Dosya-Adi":encodeURIComponent(d.name),"X-File-Id":fid||""}}}});
+    document.open(); document.write(await fRes.text()); document.close();
+  }});
+}});
+</script></body></html>"""
 
 def kokpit(rows, logs, gizli):
-    tr = "".join([f"<tr><td>{ad}</td><td><code style='word-break:break-all;'>{k}</code></td><td>{m_ip}</td><td><b>{kalan}</b></td><td>{gecis}</td><td style='white-space:nowrap;'><span style='background:#334155;padding:3px 7px;border-radius:6px;font-size:12px;margin-right:6px;'>{dosya_rozeti(dosya)}</span>{(dosya or 'oyun_yama_v1.pak').replace(k+'_','')}</td><td style='white-space:nowrap;'><a href='/onizle?anahtar={k}&admin={gizli}' target='_blank' style='background:#0284c7;color:white;padding:5px 10px;border-radius:6px;text-decoration:none;font-weight:bold;margin-right:6px;'>👁️ Bak</a><form method='GET' action='/yonetim' style='display:inline;'><input type='hidden' name='sifre' value='{gizli}'><input type='hidden' name='ekle' value='{k}'><input type='number' name='miktar' value='100' style='width:55px;padding:4px;background:#0f172a;color:white;border:1px solid #475569;border-radius:4px;'><button type='submit' style='background:#10b981;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;margin-left:4px;'>Ver</button></form></td></tr>" for k, ad, kalan, gecis, dosya, m_ip in rows])
-    ltr = "".join([f"<tr><td style='white-space:nowrap;'>{z}</td><td><code>{l_ip}</code></td><td><b>{isl}</b></td><td style='word-break:break-word;'>{det}</td></tr>" for z, l_ip, isl, det in logs])
-    return f"<!DOCTYPE html><html lang='tr'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><meta http-equiv='refresh' content='15'><title>Kokpit - Canlı Takip</title></head><body style='font-family:-apple-system,sans-serif;background:#0f172a;color:white;padding:16px;margin:0;'><h2>🎛️ Veri Otoyolu Kokpit <span style='font-size:13px;color:#34d399;font-weight:normal;'>(● Canlı Güncelleniyor)</span></h2><div style='overflow-x:auto;border:1px solid #334155;border-radius:8px;'><table cellpadding='8' style='border-collapse:collapse;width:100%;min-width:720px;font-size:14px;'><tr style='background:#1e293b;'><th>Proje</th><th>Anahtar</th><th>IP</th><th>Kalan Hak</th><th>İşlem</th><th>Tür & Dosya</th><th>İşlem / Bak</th></tr>{tr}</table></div><h3>📜 Kalıcı İşlem Günlüğü (Son 200 Hareket)</h3><div style='overflow-x:auto;border:1px solid #334155;border-radius:8px;'><table cellpadding='8' style='border-collapse:collapse;width:100%;min-width:500px;font-size:14px;'><tr style='background:#1e293b;'><th>Zaman</th><th>IP Adresi</th><th>İşlem</th><th>Detay</th></tr>{ltr}</table></div><br><a href='/' style='color:#38bdf8;text-decoration:none;'>← Ana Sayfa</a></body></html>"
+    tr = ""
+    for k, ad, kota_b, kull_b, bitis_ts, dosya, m_ip in rows:
+        gun = max(0, int((int(bitis_ts or 0) - int(datetime.now().timestamp())) / 86400))
+        kad = (dosya or "Dosya yok").split(":")[-1].replace(k + "_", "")
+        tr += f"<tr><td>{ad}</td><td><code style='word-break:break-all;'>{k}</code></td><td>{m_ip}</td><td><b>{boyut_yaz(kull_b)} / {boyut_yaz(kota_b)}</b><br><small style='color:#34d399;'>⏳ {gun} gün</small></td><td>{dosya_rozeti(kad)} {kad}</td><td style='white-space:nowrap;'><a href='/onizle?anahtar={k}&admin={gizli}' target='_blank' style='background:#0284c7;color:white;padding:5px 8px;border-radius:6px;text-decoration:none;'>👁️ Bak</a> <form method='GET' action='/yonetim' style='display:inline;'><input type='hidden' name='sifre' value='{gizli}'><input type='hidden' name='ekle' value='{k}'><select name='gb' style='width:auto;padding:3px;'><option value='1'>1 GB</option><option value='10'>10 GB</option><option value='100'>100 GB</option></select><select name='gun' style='width:auto;padding:3px;'><option value='7'>7 Gün</option><option value='30'>30 Gün</option><option value='365'>365 Gün</option></select><button type='submit' style='width:auto;padding:4px 8px;font-size:12px;'>Tanımla</button></form></td></tr>"
+    ltr = "".join([f"<tr><td>{z}</td><td><code>{l_ip}</code></td><td><b>{isl}</b></td><td>{det}</td></tr>" for z, l_ip, isl, det in logs])
+    return f"<!DOCTYPE html><html lang='tr'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><meta http-equiv='refresh' content='15'><title>Kokpit</title></head><body style='font-family:-apple-system,sans-serif;background:#0f172a;color:white;padding:16px;'><h2>🎛️ Veri Otoyolu Kasa Kokpiti</h2><div style='overflow-x:auto;border:1px solid #334155;border-radius:8px;'><table cellpadding='8' style='border-collapse:collapse;width:100%;font-size:14px;'><tr style='background:#1e293b;'><th>Proje</th><th>Anahtar</th><th>IP</th><th>Kasa & Süre</th><th>Dosya</th><th>İşlem</th></tr>{tr}</table></div><h3>📜 Güvenlik Günlüğü</h3><div style='overflow-x:auto;border:1px solid #334155;border-radius:8px;'><table cellpadding='8' style='border-collapse:collapse;width:100%;font-size:14px;'><tr style='background:#1e293b;'><th>Zaman</th><th>IP</th><th>İşlem</th><th>Detay</th></tr>{ltr}</table></div><br><a href='/' style='color:#38bdf8;'>← Ana Sayfa</a></body></html>"
