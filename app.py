@@ -157,10 +157,10 @@ class Otoyol(BaseHTTPRequestHandler):
                 <div style="background:#1e293b;padding:20px;border-radius:12px;border:1px solid #334155;">
                 <h2 style="color:#f87171;margin-top:0;">⚠️ Kotanız Bitti (0 Hak)</h2>
                 <p style="color:#cbd5e1;">Devam etmek için <b>100 TL = 100 Hak</b> paketini seçin:</p>
-                <button onclick="navigator.clipboard.writeText('{IBAN_NO}'); this.innerText='✅ IBAN Kopyalandı! Banka Uygulamasını Açın'; this.style.background='#10b981';" style="width:100%;border:none;cursor:pointer;display:block;text-align:center;background:#22c55e;color:#0f172a;font-weight:bold;padding:14px;border-radius:8px;margin:15px 0;font-size:15px;">⚡ Tek Tıkla IBAN Kopyala ve Öde (100 TL)</button>
+                <a href="https://akbank.com" target="_blank" onclick="navigator.clipboard.writeText('{IBAN_NO}');" style="display:block;text-align:center;background:#22c55e;color:#0f172a;font-weight:bold;text-decoration:none;padding:14px;border-radius:8px;margin:15px 0;font-size:15px;">🏦 IBAN Kopyala ve Akbank'a Git (100 TL)</a>
                 <div style="text-align:center;background:#0f172a;padding:15px;border-radius:8px;margin-bottom:15px;">
                 <p style="margin:0 0 10px 0;font-size:14px;color:#94a3b8;">📱 Mobil Bankacılıktan Karekod Okut:</p>
-                <img src="{qr_resim_url}" alt="TR Karekod" style="width:160px;height:160px;border-radius:8px;background:white;padding:5px;">
+                <img src="{qr_resim_url}" alt="TR Karekod" style="width:210px;height:auto;border-radius:8px;background:white;padding:5px;">
                 </div>
                 <div style="background:#0f172a;padding:15px;border-radius:8px;font-size:14px;">
                 <p style="margin:0 0 10px 0;color:#94a3b8;">🏦 Veya Tek Tıkla IBAN Gönder:</p>
