@@ -151,7 +151,34 @@ class Otoyol(BaseHTTPRequestHandler):
             kalan = sum(int(v) for v in row)
             if kalan <= 0:
                 log_yaz(ip, "YUKLEME_ENGELLENDI", f"{anahtar} (Kota 0)")
-                self.html(402, f"<body style='font-family:sans-serif;background:#0f172a;color:white;padding:30px;'><h3>⚠️ Bu API Anahtarı Kullanılmış veya Kotası Bitmiş (Tek Kullanımlık)!</h3><p><b>100 TL = 100 Hak</b> IBAN: <code>{IBAN_NO}</code> ({ALICI_AD})<br>Açıklama: <code>{anahtar}</code></p><a href='/' style='color:#38bdf8;'>← Ana Sayfa</a></body>"); return
+                odeme_linki = "https://shopier.com"
+                qr_resim_url = "https://hizliresim.com"
+                self.html(402, f"""<body style="font-family:sans-serif;background:#0f172a;color:white;padding:20px;max-width:480px;margin:auto;">
+                <div style="background:#1e293b;padding:20px;border-radius:12px;border:1px solid #334155;">
+                <h2 style="color:#f87171;margin-top:0;">⚠️ Kotanız Bitti (0 Hak)</h2>
+                <p style="color:#cbd5e1;">Devam etmek için <b>100 TL = 100 Hak</b> paketini seçin:</p>
+                <a href="{odeme_linki}" target="_blank" style="display:block;text-align:center;background:#22c55e;color:#0f172a;font-weight:bold;text-decoration:none;padding:14px;border-radius:8px;margin:15px 0;">💳 Kart ile 5 Saniyede Öde (100 TL)</a>
+                <div style="text-align:center;background:#0f172a;padding:15px;border-radius:8px;margin-bottom:15px;">
+                <p style="margin:0 0 10px 0;font-size:14px;color:#94a3b8;">📱 Mobil Bankacılıktan Karekod Okut:</p>
+                <img src="{qr_resim_url}" alt="TR Karekod" style="width:160px;height:160px;border-radius:8px;background:white;padding:5px;">
+                </div>
+                <div style="background:#0f172a;padding:15px;border-radius:8px;font-size:14px;">
+                <p style="margin:0 0 10px 0;color:#94a3b8;">🏦 Veya Tek Tıkla IBAN Gönder:</p>
+                <div style="margin-bottom:8px;">IBAN:<br><code id="iban" style="color:#38bdf8;font-size:13px;">{IBAN_NO}</code>
+                <button onclick="kopyala('iban', this)" style="float:right;background:#3b82f6;color:white;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;">📋 Kopyala</button></div>
+                <p style="margin:8px 0;">Alıcı: <b>{ALICI_AD}</b></p>
+                <div style="margin-top:8px;">Açıklama (Zorunlu):<br><code id="aciklama" style="color:#fbbf24;font-size:15px;font-weight:bold;">{anahtar}</code>
+                <button onclick="kopyala('aciklama', this)" style="float:right;background:#10b981;color:white;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;">📋 Kopyala</button></div>
+                </div>
+                <div style="margin-top:20px;text-align:center;"><a href="/" style="color:#38bdf8;text-decoration:none;">← Ana Sayfaya Dön</a></div>
+                </div>
+                <script>
+                function kopyala(id, btn) {{
+                    navigator.clipboard.writeText(document.getElementById(id).innerText);
+                    var eski = btn.innerText; btn.innerText = "✅ Kopyalandı!";
+                    setTimeout(() => {{ btn.innerText = eski; }}, 2000);
+                }}
+                </script></body>"""); return
             g_ad = f"{anahtar}_{os.path.basename(d_adi)}"
             open(os.path.join("dosyalar", g_ad), "wb").write(icerik)
             db.execute("UPDATE musteriler SET dosya_adi=?, kalan_hak=kalan_hak-1, toplam_gecis=toplam_gecis+1 WHERE anahtar=?", (g_ad, anahtar)); db.commit()
