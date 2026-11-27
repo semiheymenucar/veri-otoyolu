@@ -131,3 +131,30 @@ class Otoyol(BaseHTTPRequestHandler):
         if p.path == "/oturum_ac":
             anahtar = self.headers.get("X-Anahtar", "").strip()
             d_adi = os.path.basename(urllib.parse.unquote(self.headers.get("X-Dosya-Adi", "dosya.bin")))
+            t_boyut = int(self.headers.get("X-Toplam-Boyut", 0))
+            r = db.execute("SELECT kota_byte, bitis_ts FROM musteriler WHERE anahtar=?", (anahtar,)).fetchone()
+            if not r: self.html(403, "<h3>❌ Geçersiz Anahtar.</h3>"); return
+            kb, bts = r
+            if int(bts or 0) <= int(time.time()): self.html(402, "<h3>🔒 Süre dolmuş.</h3>"); return
+            if t_boyut > int(kb or 0): self.html(402, "<h3>⚠️ Kasa limiti aşıldı!</h3>"); return
+            if t_boyut > drive_motor.havuz_bos_alan(): self.html(507, "<h3>⚠️ Bulut havuzu dolu.</h3>"); return
+            u = drive_motor.oturum_ac(f"{anahtar}_{d_adi}", t_boyut, self.headers.get("Origin", ""))
+            if not u: self.html(500, "<h3>⚠️ Tünel açılamadı.</h3>"); return
+            v = json.dumps({"upload_url": u}).encode("utf-8")
+            self.send_response(200); self.send_header("Content-Type", "application/json"); self.send_header("Content-Length", str(len(v))); self.end_headers(); self.wfile.write(v); return
+        if p.path == "/yukleme_tamamla":
+            anahtar = self.headers.get("X-Anahtar", "").strip()
+            d_adi = os.path.basename(urllib.parse.unquote(self.headers.get("X-Dosya-Adi", "dosya.bin")))
+            fid = self.headers.get("X-File-Id", "").strip()
+            r = db.execute("SELECT kota_byte, dosya_adi FROM musteriler WHERE anahtar=?", (anahtar,)).fetchone()
+            gb = drive_motor.dosya_dogrula(fid) if fid else None
+            if not r or gb is None: self.html(400, "<h3>❌ Doğrulama başarısız.</h3>"); return
+            kb, eski_d = r
+            if gb > int(kb or 0): drive_motor.dosya_sil(fid); self.html(402, "<h3>⚠️ Limit aşıldı.</h3>"); return
+            if eski_d and eski_d.startswith("gdrive:"): drive_motor.dosya_sil(eski_d.split(":", 2).pop(1))
+            db.execute("UPDATE musteriler SET dosya_adi=?, kullanilan_byte=?, toplam_gecis=toplam_gecis+1 WHERE anahtar=?", (f"gdrive:{fid}:{d_adi}", gb, anahtar)); db.commit()
+            log_yaz(ip, "KASA_YUKLENDI", f"{anahtar} -> {d_adi}")
+            self.html(200, f"<body style='background:#0f172a;color:white;padding:30px;'><h2>🛡️ Kasaya Mühürlendi!</h2><a href='/kontrol?anahtar={anahtar}' style='color:#34d399;'>📂 Aç →</a></body>"); return
+        self.html(404, "<h3>404</h3>")
+
+HTTPServer(("0.0.0.0", int(os.environ.get("PORT", 8080))), Otoyol).serve_forever()
